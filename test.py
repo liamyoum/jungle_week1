@@ -69,7 +69,7 @@ def home():
 @app.route('/timerstart', methods=['POST'])
 def start_time():
     nowtime= time.strftime('%Y:%m:%d:%H:%M:%S')
-    target_user = db.user.find_one({'std_id': 'test'})
+    target_user = db.user.find_one({'std_id': testid})
 
 
     if target_user is None:
@@ -89,7 +89,7 @@ def start_time():
 @app.route('/timerend', methods=['POST'])
 def end_time():
 
-    target_user = db.user.find_one({'std_id': 'test'})
+    target_user = db.user.find_one({'std_id': testid})
     if "start_time" in target_user: 
         if None ==target_user['start_time']:
             return jsonify({'result': 'fail','message':'no_start'})
@@ -135,7 +135,7 @@ def end_time():
 @app.route('/leaderboard', methods=['GET'])
 def load_leaderboard():
     sortMode = request.args.get('sortMode', 'all')
-    me = db.user.find_one({'std_id': 'test'})
+    me = db.user.find_one({'std_id': testid})
     if sortMode == 'all':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
     elif sortMode =='friends':
