@@ -3,6 +3,7 @@ import time, random
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 from flask_apscheduler import APScheduler
+from jinja2 import Environment, FileSystemLoader
 
 ## functions & class
 
@@ -49,6 +50,8 @@ class Config:
     SCHEDULER_API_ENABLED = True
 
 ## pre-settings
+file_loader = FileSystemLoader('C:/path/templates')
+env = Environment(loader=file_loader)
 
 app = Flask(__name__)
 client = MongoClient('localhost', 27017)
@@ -77,49 +80,7 @@ def reset():
 
 @app.route('/')
 def home():
-    db.quotes.delete_many({})
-    quotess=["ㅁㄴㅇㄹ",'asdf','qwer']
-    db.user.delete_many({})
-    users = [
-        {
-            'std_id': '1557',
-            'name': '나(테스트)',
-            'total_time': 3600,
-            'start_time': None,
-            'today_times': [],
-            'friends': ['user2', 'user3'],
-            'replys': []
-        },
-        {
-            'std_id': 'user2',
-            'name': '친구1',
-            'total_time': 7200,
-            'start_time': None,
-            'today_times': [],
-            'friends': ['1557'],
-            'replys': [{'id': 'user3', 'reply': '열공하세요!'}]
-        },
-        {
-            'std_id': 'user3',
-            'name': '친구2',
-            'total_time': 5000,
-            'start_time': None,
-            'today_times': [],
-            'friends': ['1557'],
-            'replys': []
-        },
-        {
-            'std_id': 'user4',
-            'name': '모르는사람',
-            'total_time': 10000,
-            'start_time': None,
-            'today_times': [],
-            'friends': [],
-            'replys': []
-        }
-    ]
-    db.quotes.insert_many(quotess)
-    db.user.insert_many(users)
+
     return render_template('index.html')
 
 #현재 id(testid)의 현재 시간을 '년:월:일:시간:분:초'로 저장
@@ -292,4 +253,8 @@ def randquote():
 if __name__ == '__main__':
     
     app.run('0.0.0.0', port=5000, debug=True)
+    db.quotes.delete_many({})
+    quotess=["ㅁㄴㅇㄹ",'asdf','qwer']
+
+    db.quotes.insert_many(quotess)
 
