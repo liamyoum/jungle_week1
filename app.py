@@ -18,9 +18,7 @@ app.config.update(
     session_COOKIE_PERMANENT=False
 )
 
-## MongoDB URI는 환경변수로 설정하거나 기본값으로 localhost를 사용합니다. 실제 배포 시에는 환경변수로 설정된 URI를 사용하도록 합니다.
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
-client = MongoClient(MONGO_URI)
+client = MongoClient("mongodb://username:password@localhost:27017/")
 db = client.jungle
 
 ## std_id 필드에 고유 인덱스를 생성하여 중복된 std_id가 저장되지 않도록 합니다.
