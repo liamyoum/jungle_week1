@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ko">
+	<head>
+		<!-- Tailwind로 변경 필요 -->
+		<!-- BootStrap
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+		/> -->
+
+		<!-- 구글폰트 -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
+			rel="stylesheet"
+		/>
+
+		<title>정품타</title>
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="p-5 mb-4 bg-light rounded-3">
+				<div class="container-fluid py-5">
+					<h1 class="display-4">
+						나홀로메모장
+						<span
+							class="badge rounded-pill fs-2 bg-secondary align-top mt-2"
+							>ver2.0</span
+						>
+					</h1>
+					<div class="mb-3">
+						<input
+							id="memo-title"
+							class="form-control form-control-lg w-50"
+							placeholder="제목을 입력하세요"
+						/>
+					</div>
+
+					<div class="mb-3">
+						<textarea
+							id="memo-content"
+							class="form-control w-50"
+							rows="3"
+							placeholder="내용을 입력하세요"
+						></textarea>
+					</div>
+
+					<button
+						onclick="saveMemo()"
+						id="btn-post-box"
+						type="submit"
+						class="btn btn-primary btn-lg"
+					>
+						저장하기
+					</button>
+				</div>
+			</div>
+
+			<div
+				id="card-list"
+				class="row row-cols-2 row-cols-md-3 g-4"
+			></div>
+		</div>
+
+		<!-- 이 부분은 절대 지우지 마세요. -->
+		<!-- <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script> -->
+		<!-- 수정 필요 -->
+		<!-- 이 부분은 절대 지우지 마세요. -->
+
+		<script>
+			$(document).ready(function () {
+				showMemos();
+			});
+
+			function showMemos() {
+				$.ajax({
+					type: 'GET',
+					url: 'api/memo',
+					data: {},
+					success: function (response) {
+						let memos = response['memos'];
+						let count = memos.length; // 메모 총 개수
+
+						// row가 1개 일때만 row 1개 당 카드 3개가 보이고, row가 2개 되는 순간부터 row 1개 당 카드 2개 보이도록 클래스 변경
+						if (count > 3) {
+							$('#card-list')
+								.removeClass('row-cols-md-3')
+								.addClass('row-cols-md-2');
+						} else {
+							$('#card-list')
+								.removeClass('row-cols-md-2')
+								.addClass('row-cols-md-3');
+						}
+
+						$('#card-list').empty(); // 기존 내용 비우기
+
+						for (let i = 0; i < memos.length; i++) {
+							makeCard(
+								memos[i]['_id'],
+								memos[i]['title'],
+								memos[i]['content'],
+								memos[i]['likes']
+							);
+						}
+					}
+				});
+			}
+
+			function makeCard(id, title, content, likes) {
+				let tempHtml = `
+				<div class="col">
+					<div class="card h-100">
+						<div id="card-body-${id}" class="card-body">
+							<h5 class="card-title">${title}</h5>
+							<p class="card-text">${content}</p>
+							<p class="card-likes">좋아요 수: ${likes}</p>
+
+							<button onclick="editMemo('${id}')" class="btn btn-sm btn-outline-info edit-button">수정</button>
+							<button onclick="deleteMemo('${id}')" class="btn btn-sm btn-outline-danger delete-button">삭제</button>
+							<button onclick="likeMemo('${id}')" class="btn btn-sm btn-outline-primary link-like">좋아요!👍</button>
+							
+							
+						</div>
+					</div>
+				</div>`;
+				$('#card-list').append(tempHtml);
+			}
+
+			function saveMemo() {
+				// input에서 id 값을 이용해 데이터 가져오기
+				let title = $('#memo-title').val();
+				let content = $('#memo-content').val();
+
+				// 빈칸 체크: 제목이나 내용이 비어있으면 alert를 띄우고 중단합니다.
+
+				if (title.trim() == '' || content.trim() == '') {
+					alert('제목과 내용을 모두 입력해주세요!');
+					$('#memo-title').focus(); // 제목창으로 커서를 옮겨줌
+					return;
+				}
+
+				// jQuery Ajax 호출
+				$.ajax({
+					type: 'POST',
+					url: '/api/memo',
+					data: { title_give: title, content_give: content }, // Flask(서버)에서 받을 변수명과 맞는지 확인
+					success: function (response) {
+						if (response['result'] == 'success') {
+							alert('포스팅 성공!');
+							// 성공 시 페이지 새로고침
+							window.location.reload();
+						} else {
+							alert('서버에 신호 갔지만 로직 오류 발생!');
+							console.log(response);
+						}
+					}
+				});
+			}
+
+			function likeMemo(id) {
+				$.ajax({
+					type: 'POST',
+					url: 'api/memo/like',
+					data: { id_give: id },
+					success: function (response) {
+						if (response['result'] == 'success') {
+							showMemos();
+						}
+					}
+				});
+			}
+
+			// 이 함수는 서버로 데이터 보내지는 않고 프론트엔드 요소만 변경
+			function editMemo(id) {
+				let title = $(`#card-body-${id} .card-title`).text();
+				let content = $(`#card-body-${id} .card-text`).text();
+
+				let tempHtml = `
+				<input class="new-title form-control mb-2" value="${title}">
+				<textarea class="new-text form-control mb-2" rows="3">${content}</textarea>
+				<button onclick="updateMemo('${id}')" class="btn btn-sm btn-success save-button">저장하기</button>`;
+
+				$(`#card-body-${id}`).html(tempHtml);
+			}
+
+			// 이 함수가 API로 요청 보냄
+			function updateMemo(id) {
+				let newTitle = $(`#card-body-${id} .new-title`).val(); // 새롭게 입력한 제목
+				let newText = $(`#card-body-${id} .new-text`).val(); // 새롭게 입력한 내용
+
+				$.ajax({
+					type: 'POST',
+					url: 'api/memo/edit',
+					data: {
+						id_give: id,
+						new_title_give: newTitle,
+						new_text_give: newText
+					},
+					success: function (response) {
+						if (response['result'] == 'success') {
+							alert('수정 완료!');
+							showMemos();
+						}
+					}
+				});
+			}
+
+			function deleteMemo(id) {
+				if (
+					confirm(
+						'정말로 이 메모를 삭제하시겠습니까? 되돌릴 수 없습니다.'
+					)
+				) {
+					$.ajax({
+						type: 'POST',
+						url: 'api/memo/delete',
+						data: {
+							id_give: id
+						},
+						success: function (response) {
+							if (response['result'] == 'success') {
+								alert('삭제 완료!');
+								showMemos();
+							}
+						}
+					});
+				}
+			}
+		</script>
+	</body>
+</html>
