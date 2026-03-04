@@ -85,6 +85,7 @@
           success: function (response) {
             if (response['result'] == 'success') {
               alert('로그인 성공! 공부 시작 카운트 시작');
+              sessionStorage.setItem('mytoken', response['token']); // 토큰 세션 스토리지에 저장
               window.location.href = '/'; // index.html로 이동
           } else {
               $errorBox.text("계정 정보가 올바르지 않습니다.");
