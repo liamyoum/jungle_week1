@@ -15,10 +15,16 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=False,
-    session_COOKIE_PERMANENT=False
+    SESSION_COOKIE_PERMANENT=False
 )
 
-client = MongoClient("mongodb://test:test@localhost:27017/")
+# 로컬용
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+client = MongoClient(MONGO_URI)
+
+# 배포용
+# client = MongoClient("mongodb://test:test@localhost:27017/")
+
 db = client.jungle
 
 ## std_id 필드에 고유 인덱스를 생성하여 중복된 std_id가 저장되지 않도록 합니다.
@@ -26,7 +32,9 @@ db.users.create_index("std_id", unique=True)
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    if 'user_id' in session:
+        return render_template('index.html')
+    return redirect('/login')
 
 @app.route('/login')
 def login_page():
@@ -67,15 +75,15 @@ def api_login():
 ## 회원가입 API에서는 새로운 사용자를 데이터베이스에 저장하며, 이미 존재하는 아이디로 회원가입을 시도할 경우 적절한 오류 메시지를 반환합니다.
 @app.route('/api/signup', methods=['POST'])
 def api_signup():
-    std_id = request.form.get('std_id', '').strip()
-    password = request.form.get('password', '').strip()
-    nickname = request.form.get('nickname', '').strip()
+    std_id = request.form.get('signupId', '').strip()
+    password = request.form.get('signupPw', '').strip()
+    nickname = request.form.get('signupNick', '').strip()
 
     if not std_id or not password or not nickname:
         return fail("필수값 누락", 400)
 
-    if len(password) < 13:
-        return fail("비밀번호는 13자 이상", 400)
+    if len(password) > 13:
+        return fail("비밀번호는 13자 이하", 400)
     if len(nickname) > 20:
         return fail("닉네임은 20자 이하", 400)
 

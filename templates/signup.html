@@ -77,15 +77,13 @@
                     return;
                 }
 
-                window.location.href = '/login'; // login.html로 이동
-
                 $.ajax({
                 type: "POST",
-                url: "/api/signUp",
+                url: "/api/signup",
                 data: {
-                    id_give: id,
-                    pw_give: pw,
-                    nick_give: nick,
+                    signupId: id,
+                    signupPw: pw,
+                    signupNick: nick,
                 },
                 success: function (response) {
                     if (response['result'] == 'success') {
