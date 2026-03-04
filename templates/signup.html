@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Required meta tags -->
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, shrink-to-fit=no"
+		/>
+		<!-- Tailwind -->
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<!-- Jquery -->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<!-- 구글폰트 -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
+			rel="stylesheet"
+		/>
+
+<title> 회원가입 </title>
+
+    <style>
+      .jungle-bg {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                              url('../img/jungle.jpg');
+            background-size: cover;
+            background-position: center;
+      }
+    </style>
+
+    <body class="jungle-bg h-screen w-screen">
+        <div class="flex min-h-screen">
+            <div class="flex w-full items-center justify-center bg-white px-8 lg:w-1/2">
+                <div class="w-full max-2-md">
+                    <h2 class="mb-10 text-4xl font-extrabold text-[#2D4B1F]">Sign up</h2>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label class="mb-2 block font-bold text-[#2D4B1F]">Student ID</label>
+                            <input type="text" id="signupId" placeholder="숫자로 입력해주세요 ex.17" class="w-full bg-[#F8F9FF] p-5 text-lg outline-none placeholder:text-gray-400"/>
+                        </div>
+                        <div>
+                            <label class="mb-2 block font-bold text-[#2D4B1F]">Password</label>
+                            <input type="password" id="signupPw" placeholder="********" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
+                        </div>
+                        <div>
+                            <label class="mb-2 block font-bold text-[#2D4B1F]">Nickname</label>
+                            <input type="text" id="signupNick" placeholder="닉네임을 입력해주세요" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
+                        </div>
+                        <div id="error-msg" class="text-red-500 text-xs mt-2 hidden text-center">
+                            계정 정보가 올바르지 않습니다.
+                        </div>
+                        <button onclick="signUp()" class="mt-4 w-full bg-[#C5D3B8] p-5 text-lg font-bold text-white transition-hover hover:bg-[#b8c6ab]">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+			function signUp() {
+                const id = $('#signupId').val();
+                const pw = $('#signupPw').val();
+                const nick = $('#signupNick').val();
+
+                let $errorBox = $('#error-msg');
+                $errorBox.addClass("hidden");
+
+                if (id == '' || pw == '' || nick == '') {
+                    $errorBox.text("모두 입력해주세요.");
+                    $errorBox.removeClass('hidden'); // 숨김 해제
+                    return;
+                }
+
+                window.location.href = '/login'; // login.html로 이동
+
+                $.ajax({
+                type: "POST",
+                url: "/api/signUp",
+                data: {
+                    id_give: id,
+                    pw_give: pw,
+                    nick_give: nick,
+                },
+                success: function (response) {
+                    if (response['result'] == 'success') {
+                    alert('회원가입 성공');
+                    window.location.href = '/login'; // login.html로 이동
+                } else {
+                    $errorBox.text("회원가입에 실패하였습니다. 다시 시도해주세요");
+                    $errorBox.removeClass("hidden");
+                }
+                }
+            });
+            }
+        </script>
+    </body>
+</html>
