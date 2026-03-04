@@ -18,7 +18,7 @@ app.config.update(
     session_COOKIE_PERMANENT=False
 )
 
-client = MongoClient("mongodb://username:password@localhost:27017/")
+client = MongoClient("mongodb://test:test@localhost:27017/")
 db = client.jungle
 
 ## std_id 필드에 고유 인덱스를 생성하여 중복된 std_id가 저장되지 않도록 합니다.
