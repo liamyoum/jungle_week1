@@ -1,0 +1,103 @@
+<!-- {% extends "base.html" %}
+
+{% block head %} -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Required meta tags -->
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, shrink-to-fit=no"
+		/>
+		<!-- Tailwind -->
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<!-- Jquery -->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<!-- 구글폰트 -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
+			rel="stylesheet"
+		/>
+    <title>정품타 | 로그인</title>
+
+    <style>
+      .jungle-bg {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                              url('../img/jungle.jpg');
+            background-size: cover;
+            background-position: center;
+      }
+    </style>
+<!-- {% endblock %}
+
+{% block content %} -->
+	<body class="jungle-bg h-screen flex items-center justify-center">
+
+    <div class="bg-white/80 backdrop-blur-md p-10 rounded-2xl shadow-2xl w-full max-w-sm border border-white/20">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-black text-green-900 mb-2">정품타</h1>
+            <p class="text-green-700 font-medium">선의의 경쟁을 하세요</p>
+        </div>
+
+        <div class="space-y-6">
+            <div>
+                <input type="text" id="userId" placeholder="아이디" 
+                    class="w-full px-5 py-3 rounded-xl border-none bg-white/50 focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder:text-gray-500">
+            </div>
+
+            <div>
+                <input type="password" id="userPw" placeholder="비밀번호" 
+                    class="w-full px-5 py-3 rounded-xl border-none bg-white/50 focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder:text-gray-500">
+            </div>
+
+            <div id="error-msg" class="text-red-500 text-xs mt-2 hidden text-center">
+              계정 정보가 올바르지 않습니다.
+            </div>
+
+            <button onclick="login()" id="loginBtn" 
+                    class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200">
+                정품타 입장하기
+            </button>
+        </div>
+
+        <div class="mt-8 text-center text-sm text-gray-700">
+            계정이 없으신가요? <a href="/signup" class="text-green-800 font-bold hover:underline">회원가입</a>
+        </div>
+    </div>
+
+		<script>
+			function login() {
+        const id = $('#userId').val();
+        const pw = $('#userPw').val();
+        let $errorBox = $('#error-msg');
+
+        $errorBox.addClass('hidden');
+
+        if (id == '' || pw == '') {
+          $errorBox.text("아이디와 비밀번호를 모두 입력해주세요.");
+          $errorBox.removeClass('hidden'); // 숨김 해제
+          return;
+        }
+
+        $.ajax({
+          type: "POST",
+          url: "/api/login",
+          data: {
+            id_give: id,
+            pw_give: pw
+          },
+          success: function (response) {
+            if (response['result'] == 'success') {
+              alert('로그인 성공! 공부 시작 카운트 시작');
+              window.location.href = '/'; // index.html로 이동
+          } else {
+              $errorBox.text("계정 정보가 올바르지 않습니다.");
+              $errorBox.removeClass("hidden");
+          }
+        }
+      });
+    }
+		</script>
+	</body>
+</html>
