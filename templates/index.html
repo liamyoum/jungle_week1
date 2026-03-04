@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Required meta tags -->
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, shrink-to-fit=no"
+		/>
+		<!-- Tailwind -->
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<!-- Jquery -->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<!-- 구글폰트 -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
+			rel="stylesheet"
+		/>
+    <title>정품타</title>
+
+    <style>
+      .jungle-bg {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                              url('../img/jungle.jpg');
+            background-size: cover;
+            background-position: center;
+      }
+    </style>
+
+	<body class="jungle-bg bg-cover bg-fixed min-h-screen flex justify-center">
+		<nav class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all">
+      <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+        <div class="font-bold text-3xl text-white tracking-tighter cursor-pointer">
+          정품타
+        </div>
+
+        <div class="flex gap-6 text-white/80 font-medium text-md items-center">
+          <a href="#" class="hover:text-white">리더보드</a>
+          <a href="#" class="hover:text-white">실시간 접속자</a>
+          <a href="#" class="hover:text-white">친구</a>
+          <a href="#" class="hover:text-white">마이페이지</a>
+          <button class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-16">
+
+      <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div class="mb-6">
+          <h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
+          <p class="text-3xl font-black text-green-700">시작 버튼 누를 때 시간 or {{ start_time }}</p>
+          <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
+          <p class="text-3xl font-black text-green-700">start_time부터 스탑워치처럼 브라우저에서 작동?</p> 
+        </div>
+        
+        <div class="flex justify-between pt-6 border-t border-gray-50">
+          <button onclick="startSession()" class="w-1/5 shadow-sm border border-blue-300 bg-blue-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-blue-500/30 transition">시작</button>
+          <button onclick="pauseSession()" class="w-1/5 shadow-sm border border-green-300 bg-green-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-green-500/30 transition">휴식</button>
+          <button onclick="endSession()" class="w-1/5 shadow-sm border border-red-300 bg-red-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-red-500/30 transition">종료</button>
+        </div>
+        <p class="text-xl text-center text-gray-600 pt-4 italic font-medium">
+            "{{ quote }}"
+        </p>
+      </section>
+      
+      <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-gray-100">
+          <h2 class="text-xl font-bold text-gray-800">정글 리더보드 (TOP 30)</h2>
+        </div>
+
+        <div class="overflow-y-auto h-96 custom-scrollbar mb-8">
+          <table class="w-full text-left">
+            <thead class="sticky top-0 bg-gray-50 text-gray-500 text-xs">
+              <tr>
+                <th class="px-6 py-3">순위</th>
+                <th class="px-6 py-3">이름</th>
+                <th class="px-6 py-3">번호</th>
+                <th class="px-6 py-3">총 누적시간</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+              {% for user in ranking_list %}
+              <tr class="hover:bg-green-50/30 transition">
+                <td class="px-6 py-4 font-bold text-gray-400">{{ loop.index }}위</td>
+                <td class="px-6 py-4 font-semibold text-gray-800">{{ user.name }}</td>
+                <td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
+                <td class="px-6 py-4 font-mono text-green-600">{{ user.total_time }}</td>
+              </tr>
+              <tr class="hover:bg-green-50/30 transition">
+                <td class="px-6 py-4 font-bold text-gray-400">{{ loop.index }}위</td>
+                <td class="px-6 py-4 font-semibold text-gray-800">{{ user.name }}</td>
+                <td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
+                <td class="px-6 py-4 font-mono text-green-600">{{ user.total_time }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-green-600 p-4 text-white flex justify-between items-center shadow-inner">
+          <span class="font-bold">내 순위</span>
+          <div class="flex gap-4 items-center">
+            <span class="text-2xl font-black">{{ my_rank }}위</span>
+            <span class="text-sm opacity-80">{{ my_name }} ({{ my_total_time }})</span>
+          </div>
+        </div>
+      </section>
+    </div>
+		<script>
+			$(document).ready(function () {
+				showMemos();
+			});
+
+			function showMemos() {
+				$.ajax({
+					type: 'GET',
+					url: 'api/memo',
+					data: {},
+					success: function (response) {
+						let memos = response['memos'];
+						let count = memos.length; // 메모 총 개수
+
+						// row가 1개 일때만 row 1개 당 카드 3개가 보이고, row가 2개 되는 순간부터 row 1개 당 카드 2개 보이도록 클래스 변경
+						if (count > 3) {
+							$('#card-list')
+								.removeClass('row-cols-md-3')
+								.addClass('row-cols-md-2');
+						} else {
+							$('#card-list')
+								.removeClass('row-cols-md-2')
+								.addClass('row-cols-md-3');
+						}
+
+						$('#card-list').empty(); // 기존 내용 비우기
+
+						for (let i = 0; i < memos.length; i++) {
+							makeCard(
+								memos[i]['_id'],
+								memos[i]['title'],
+								memos[i]['content'],
+								memos[i]['likes']
+							);
+						}
+					}
+				});
+			}
+
+			function startSession(id, title, content, likes) {
+				let tempHtml = `
+				<div class="col">
+					<div class="card h-100">
+						<div id="card-body-${id}" class="card-body">
+							<h5 class="card-title">${title}</h5>
+							<p class="card-text">${content}</p>
+							<p class="card-likes">좋아요 수: ${likes}</p>
+
+							<button onclick="editMemo('${id}')" class="btn btn-sm btn-outline-info edit-button">수정</button>
+							<button onclick="deleteMemo('${id}')" class="btn btn-sm btn-outline-danger delete-button">삭제</button>
+							<button onclick="likeMemo('${id}')" class="btn btn-sm btn-outline-primary link-like">좋아요!👍</button>
+							
+							
+						</div>
+					</div>
+				</div>`;
+				$('#card-list').append(tempHtml);
+			}
+
+			function saveMemo() {
+				// input에서 id 값을 이용해 데이터 가져오기
+				let title = $('#memo-title').val();
+				let content = $('#memo-content').val();
+
+				// 빈칸 체크: 제목이나 내용이 비어있으면 alert를 띄우고 중단합니다.
+
+				if (title.trim() == '' || content.trim() == '') {
+					alert('제목과 내용을 모두 입력해주세요!');
+					$('#memo-title').focus(); // 제목창으로 커서를 옮겨줌
+					return;
+				}
+
+				// jQuery Ajax 호출
+				$.ajax({
+					type: 'POST',
+					url: '/api/memo',
+					data: { title_give: title, content_give: content }, // Flask(서버)에서 받을 변수명과 맞는지 확인
+					success: function (response) {
+						if (response['result'] == 'success') {
+							alert('포스팅 성공!');
+							// 성공 시 페이지 새로고침
+							window.location.reload();
+						} else {
+							alert('서버에 신호 갔지만 로직 오류 발생!');
+							console.log(response);
+						}
+					}
+				});
+			}
+
+			function likeMemo(id) {
+				$.ajax({
+					type: 'POST',
+					url: 'api/memo/like',
+					data: { id_give: id },
+					success: function (response) {
+						if (response['result'] == 'success') {
+							showMemos();
+						}
+					}
+				});
+			}
+
+			// 이 함수는 서버로 데이터 보내지는 않고 프론트엔드 요소만 변경
+			function editMemo(id) {
+				let title = $(`#card-body-${id} .card-title`).text();
+				let content = $(`#card-body-${id} .card-text`).text();
+
+				let tempHtml = `
+				<input class="new-title form-control mb-2" value="${title}">
+				<textarea class="new-text form-control mb-2" rows="3">${content}</textarea>
+				<button onclick="updateMemo('${id}')" class="btn btn-sm btn-success save-button">저장하기</button>`;
+
+				$(`#card-body-${id}`).html(tempHtml);
+			}
+
+			// 이 함수가 API로 요청 보냄
+			function updateMemo(id) {
+				let newTitle = $(`#card-body-${id} .new-title`).val(); // 새롭게 입력한 제목
+				let newText = $(`#card-body-${id} .new-text`).val(); // 새롭게 입력한 내용
+
+				$.ajax({
+					type: 'POST',
+					url: 'api/memo/edit',
+					data: {
+						id_give: id,
+						new_title_give: newTitle,
+						new_text_give: newText
+					},
+					success: function (response) {
+						if (response['result'] == 'success') {
+							alert('수정 완료!');
+							showMemos();
+						}
+					}
+				});
+			}
+
+			function deleteMemo(id) {
+				if (
+					confirm(
+						'정말로 이 메모를 삭제하시겠습니까? 되돌릴 수 없습니다.'
+					)
+				) {
+					$.ajax({
+						type: 'POST',
+						url: 'api/memo/delete',
+						data: {
+							id_give: id
+						},
+						success: function (response) {
+							if (response['result'] == 'success') {
+								alert('삭제 완료!');
+								showMemos();
+							}
+						}
+					});
+				}
+			}
+		</script>
+	</body>
+</html>
