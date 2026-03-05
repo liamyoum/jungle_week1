@@ -92,9 +92,27 @@ function pauseSession() {
 			url: '/timerend',
 			data: {},
 			success: function (response) {
+				console.log('서버 응답:', response); // 디버깅용, 서버 응답 확인
+
 				if (response['result'] == 'success') {
-					const start = new Date(response['start_time']);
-					const end = new Date(response['end_time']);
+					const s = response['start_time'].split(':');
+					const e = response['end_time'].split(':');
+					const start = new Date(
+						s[0],
+						s[1] - 1,
+						s[2],
+						s[3],
+						s[4],
+						s[5]
+					);
+					const end = new Date(
+						e[0],
+						e[1] - 1,
+						e[2],
+						e[3],
+						e[4],
+						e[5]
+					);
 					const sessionSeconds = Math.floor((end - start) / 1000);
 
 					let currentPast =
