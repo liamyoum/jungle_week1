@@ -3,6 +3,7 @@ import time, random
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 from flask_apscheduler import APScheduler
+from jinja2 import Environment, FileSystemLoader
 
 ## functions & class
 
@@ -49,6 +50,8 @@ class Config:
     SCHEDULER_API_ENABLED = True
 
 ## pre-settings
+file_loader = FileSystemLoader('C:/path/templates')
+env = Environment(loader=file_loader)
 
 app = Flask(__name__)
 client = MongoClient('localhost', 27017)
@@ -58,7 +61,7 @@ scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
 
-db = client.dbjungle
+db = client.dbjungletesting
 
 testid='1557'
 
@@ -77,49 +80,7 @@ def reset():
 
 @app.route('/')
 def home():
-    db.quotes.delete_many({})
-    quotess=["ㅁㄴㅇㄹ",'asdf','qwer']
-    db.user.delete_many({})
-    users = [
-        {
-            'std_id': '1557',
-            'name': '나(테스트)',
-            'total_time': 3600,
-            'start_time': None,
-            'today_times': [],
-            'friends': ['user2', 'user3'],
-            'replys': []
-        },
-        {
-            'std_id': 'user2',
-            'name': '친구1',
-            'total_time': 7200,
-            'start_time': None,
-            'today_times': [],
-            'friends': ['1557'],
-            'replys': [{'id': 'user3', 'reply': '열공하세요!'}]
-        },
-        {
-            'std_id': 'user3',
-            'name': '친구2',
-            'total_time': 5000,
-            'start_time': None,
-            'today_times': [],
-            'friends': ['1557'],
-            'replys': []
-        },
-        {
-            'std_id': 'user4',
-            'name': '모르는사람',
-            'total_time': 10000,
-            'start_time': None,
-            'today_times': [],
-            'friends': [],
-            'replys': []
-        }
-    ]
-    db.quotes.insert_many(quotess)
-    db.user.insert_many(users)
+
     return render_template('index.html')
 
 #현재 id(testid)의 현재 시간을 '년:월:일:시간:분:초'로 저장
@@ -208,7 +169,7 @@ def load_leaderboard():
     else:
         return jsonify({'result': 'fail','message':'no current filter'})
     
-    myleader = db.user.find({'std_id':testid}, {'_id':0})
+    myleader = db.user.find_one({'std_id':testid}, {'_id':0})
     myrank=1
     for i in leaderboard:
         if i == me:
@@ -230,18 +191,22 @@ def profileshow():
     if profile == '':
         profile=testid
     
-    target_user = db.user.find_one({'std_id': profile}, {'_id': 0})
+    target_user = db.reply.find_one({'std_id': profile}, {'_id':0})
+    target_user_profile = db.user.find_one({'std_id': profile}, {'_id':0})
+    
+    if target_user_profile is None :
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
     
     if 'replys' in target_user:
         replys = target_user['replys']
 
     else:
-        return jsonify({'result':'success','profile_inf':target_user,'replys':''})
+        return jsonify({'result':'success','profile_inf':target_user_profile,'replys':[]})
     
     
     
 
-    return jsonify({'result':'success','profile_inf':target_user,'replys':replys})
+    return jsonify({'result':'success','profile_inf':target_user_profile,'replys':replys})
 
 
 
@@ -255,24 +220,16 @@ def wirtereply():
         return jsonify({'result': 'fail','message':'no_person'})
     if text =='':
         return jsonify({'result': 'fail','message':'no_text'})
-    target_user = db.user.find_one({'std_id': person}, {'_id':0})
+    target_user = db.reply.find_one({'std_id': person}, {'_id':0})
 
 
     if target_user is None:
-        return jsonify({'result': 'fail','message':'no_avaiable_user'})
-
-    if 'replys' in target_user:
-
-        replys=target_user['replys']
-        replys.append({'id':testid,'reply':text})
-        db.user.update_one(
-            {'std_id': person},
-            {'$set': {'replys': replys}}
-        )
+        db.reply.insert_one({'std_id': person,'replys':{'id':testid,'reply':text}})
 
     else:
-        replys=[{'id':testid,'reply':text}]
-        db.user.update_one(
+        replys=target_user['replys']
+        replys.append({'id':testid,'reply':text})
+        db.reply.update_one(
             {'std_id': person},
             {'$set': {'replys': replys}}
         )
@@ -282,12 +239,35 @@ def wirtereply():
 #output='quote':명언 랜덤 하나
 @app.route('/quotes', methods=['GET'])
 def randquote():
-    quotes=db.quotes.find({},{'_id':False})
-    retquote=random.shuffle(quotes)
-    return jsonify({'result':'success','quote':retquote})
+    quotes = list(db.quotes.find({}, {'_id': False})) 
+    if not quotes:
+        return jsonify({'result': 'fail', 'message': 'no quotes'})
+    retquote = random.choice(quotes) 
+    return jsonify({'result': 'success', 'quote': retquote})
 
 
 if __name__ == '__main__':
     
+<<<<<<< HEAD
     app.run('0.0.0.0', port=5001, debug=True)
+=======
+    app.run('0.0.0.0', port=5000, debug=True)
+    db.quotes.delete_many({})
+    quotess=[ {"text":"빨리 가려면 혼자 가고, 멀리 가려면 함께 가라. — 아프리카 속담"},
+              {"text":"혼자서 할 수 있는 일은 작지만, 함께 할 수 있는 일은 위대하다. — 헬렌 켈러"},
+             {"text": "모이는 것은 시작이고, 함께 머무는 것은 진보이며, 같이 일하는 것은 성공이다. — 헨리 포드"},
+             {"text": "교향곡을 혼자서 휘파람으로 불 수는 없다. 그것을 연주하려면 오케스트라가 필요하다. — H.E. 루콕"},
+            {"text":  "우리는 모두 한 날개로만 나는 천사들이다. 서로를 껴안아야만 날 수 있다. — 루치아노 데 크레센초"},
+            {"text":  "우정이란 누군가에게 ‘뭐라고? 너도 그래? 나만 그런 줄 알았는데!’라고 말하는 순간 태어난다. — C.S. 루이스"},
+           {"text":   "고난은 진정한 친구를 가려내는 시험대다. — 아리스토텔레스"},
+            {"text":  "진정한 친구는 세상 모두가 나갈 때 우리 안으로 들어오는 사람이다. — 월터 윈첼"},
+           {"text":   "누군가와 고통을 나누는 것은 그 고통을 반으로 줄이는 것이 아니라, 견딜 수 있는 힘을 두 배로 만드는 것이다. — 작자 미상 (유명 격언)"},
+           {"text":   "우리는 서로의 용기가 되어야 한다. — 마야 안젤루"},
+           {"text":   "천재성은 혼자서 빛날 수 있지만, 승리는 팀워크와 지성이 모여야 가능하다. — 마이클 조던"},
+           {"text":   "재능은 게임에서 이기게 하지만, 팀워크와 이해력은 챔피언을 만든다. — 마이클 조던"},
+          {"text":    "개미는 작지만 모이면 사자를 이긴다. — 에티오피아 속담"},
+           {"text":   "스스로 빛을 내는 별보다, 서로를 비추는 별들이 더 밝은 법이다."},
+           {"text":   "당신이 다른 사람의 배를 강 건너로 저어다 주면, 당신도 어느덧 강 건너에 도착해 있을 것이다. — 인도 속담"}]
+>>>>>>> 1bde5b9 (일단 반최종(댓글삭제 기능 없음))
 
+    db.quotes.insert_many(quotess)
