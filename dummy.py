@@ -6,7 +6,7 @@ from pymongo.errors import DuplicateKeyError
 from werkzeug.security import generate_password_hash
 
 # DB 연결 설정
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://test:test@localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "jungle")
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
