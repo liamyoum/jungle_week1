@@ -91,7 +91,7 @@ def timecal():
     thisSestime_format = sectoformat(thisSestimesec)
     totaltimeret = sectoformat(totaltime)
 
-    todaytimes.append({'start_time': str(start_am4), 'end_time': str(end_am4)})
+    todaytimes.append({'start_time': start_am4, 'end_time': end_am4})
     
     # DB 업데이트
     db.user.update_one(
@@ -436,18 +436,34 @@ def timetosec(hour,minute,second):
 @app.route('/')
 @login_required_page
 def home():
+    # 1. 유저 정보 가져오기
+    user_data = db.user.find_one({'std_id': g.user_id}, {'_id': 0})
+    
+    # 2. start_time이 있는지 확인
+    start_time_val = user_data.get('start_time')
+    is_timing = start_time_val is not None
+
+    # 명언 및 리더보드 로직 (기존 코드 유지)
     quotes = list(db.quotes.find({}, {'_id': False}))
     random_quote = random.choice(quotes)['text'] if quotes else "몰입의 즐거움!"
-
-    returnleader=load_leaderboard("all")
+    returnleader = load_leaderboard("all")
     
     if returnleader['result'] == 'fail':
-        return render_template('index.html')
+        return render_template('index.html', is_timing=is_timing, start_time_val=start_time_val)
+
     leaderboard = returnleader['leaderboard']
-
     me = returnleader['myleaderboard']
-    return render_template('index.html', quote=random_quote, ranking_list=leaderboard, my_rank=returnleader['myleader'], my_name=me['std_id'], my_total_time=me['total_time'])
 
+    # render_template에 is_timing과 start_time_val 추가
+    return render_template('index.html', 
+                           quote=random_quote, 
+                           ranking_list=leaderboard, 
+                           my_rank=returnleader['myleader'], 
+                           my_name=me['std_id'], 
+                           my_total_time=me['total_time'],
+                           is_timing=is_timing, 
+                           start_time_val=start_time_val)
+    
 @app.route('/result')
 @login_required_page
 def result():
@@ -627,40 +643,59 @@ def profileshow():
 
 #memberlist 멤버리스트
 
-@app.route('/memberlist', methods=['GET'])
-@login_required_api # 추가된 데코레이터
-def load_memberlist():
-    filterMode = request.args.get('sortMode')
-    me = db.user.find_one({'std_id': g.user_id}, {'_id':0})
+def get_member_data_logic(filterMode, user_id):
+    me = db.user.find_one({'std_id': user_id}, {'_id':0})
     if me is None:
-        return jsonify({'result':'fail','message':'멤버 나는 없는 유저 정보입니다!'})
+        return {'result':'fail','message':'유저 정보가 없습니다.'}
     
     if filterMode == 'Now':
         leaderboard = list(db.user.find({'start_time':{'$ne':None}}, {'_id':0}).sort('total_time',-1))
         if 'ban_id' in me :
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
-        return jsonify({'result':'success','memberlist':leaderboard[:30]})
+        return {'result':'success','memberlist':leaderboard[:30]}
         
-
     elif filterMode =='friends':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
-        friends=me['friends']
+        friends=me.get('friends', [])
         leaderboard=list(filter(lambda x: listfilter(x, friends),leaderboard))
         if 'ban_id' in me :
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
-        return jsonify({'result':'success','memberlist':leaderboard[:30]})
+        return {'result':'success','memberlist':leaderboard[:30]}
 
     elif filterMode =='bans':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
         if 'ban_id' in me :
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id']),leaderboard))
-            return jsonify({'result':'success','memberlist':leaderboard[:30]})
+            return {'result':'success','memberlist':leaderboard[:30]}
         else:
-            return jsonify({'result':'success','memberlist':[]})
-
-
+            return {'result':'success','memberlist':[]}
     else:
-        return jsonify({'result': 'fail','message':'no current filter'})
+        return {'result': 'fail','message':'no current filter'}
+
+# 2. 기존 API 라우트 (get_member_data_logic을 호출만 함)
+@app.route('/memberlist', methods=['GET'])
+@login_required_api
+def load_memberlist():
+    filterMode = request.args.get('sortMode')
+    # 공용 로직 함수 호출
+    result = get_member_data_logic(filterMode, g.user_id)
+    return jsonify(result)
+
+# 3. 친구 페이지 라우트 (여기서도 공용 로직 함수를 직접 호출!)
+@app.route('/friends')
+@login_required_page
+def friends_page():
+    # 🚨 이제 에러 없이 데이터를 직접 가져올 수 있습니다.
+    result = get_member_data_logic('friends', g.user_id)
+    
+    friend_list = result.get('memberlist', [])
+
+    # Jinja2에서 보여주기 위해 시간 포맷팅
+    for friend in friend_list:
+        t = sectoformat(friend.get('total_time', 0))
+        friend['time_str'] = f"{t['hours']}시간 {t['minutes']}분 {t['seconds']}초"
+
+    return render_template('friends.html', friends=friend_list)
 
 
 
@@ -742,6 +777,9 @@ def delreply():
     db.reply.update_one({'std_id': del_user},{'$pull': {'replys': {'reply_id': int(del_id)}}})
     return jsonify({'result':'success'})
 
+
+
+
 @app.route('/friends',methods=['POST'])
 @login_required_page
 def add_freinds_user():
@@ -778,10 +816,6 @@ def del_freinds_user():
 def real_time_user_page():
     return render_template('realTimeUser.html')
 
-@app.route('/friends')
-@login_required_page
-def friends_page():
-    return render_template('friends.html')
 
 @app.route('/myPage')
 @login_required_page
@@ -802,22 +836,31 @@ def my_page():
 
 @app.route('/friendsprofile')
 @login_required_page
-def freinds_page():
-    user_info = db.user.find_one({'std_id': g.user_id}, {'_id': 0})
-    if not user_info:
+def friend_profile_page():
+    # 🚨 수정: 내 정보가 아니라 URL에 포함된 profile ID를 가져옵니다.
+    target_id = request.args.get('profile')
+    if not target_id:
         return redirect('/')
         
-    # myPage에서 보여줄 댓글 데이터 가져오기
-    target_reply = db.reply.find_one({'std_id': g.user_id}, {'_id': 0})
-    replys = target_reply.get('replys', []) if target_reply else[]
+    # 친구 유저 정보 가져오기
+    target_user = db.user.find_one({'std_id': target_id}, {'_id': 0})
+    if not target_user:
+        return "존재하지 않는 유저입니다.", 404
+        
+    # 친구 페이지의 댓글 데이터 가져오기
+    target_reply = db.reply.find_one({'std_id': target_id}, {'_id': 0})
+    replys = target_reply.get('replys', []) if target_reply else []
     
-    # 초(second) 단위로 되어있는 총 공부시간을 00시간 00분 형식의 문자열로 변환
-    total_sec = user_info.get('total_time', 0)
+    # 시간 포맷팅
+    total_sec = target_user.get('total_time', 0)
     time_dict = sectoformat(total_sec)
-    user_info['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분"
-    user_info['combo'] = 0 # 연속 학습 일수 (현재 DB에 없으므로 임시로 0 처리)
+    target_user['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분"
     
-    return render_template('friendsProfile.html', profile_inf=user_info, replys=replys)
+    # 콤보 등 기타 정보 (DB에 없다면 기본값)
+    if 'combo' not in target_user:
+        target_user['combo'] = 0
+
+    return render_template('friendsProfile.html', profile_inf=target_user, replys=replys)
 
 
 ##

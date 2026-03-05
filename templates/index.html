@@ -34,51 +34,37 @@
 	</div>
 </nav>
 <div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-16">
-	<section
-		class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 p-8"
-	>
-		<div id="start-time-display" class="mb-6">
-			<p class="text-3xl font-black text-green-700">
-				시작을 눌러 정글에서의 진짜 몰입 시간을 측정해보세요.
-			</p>
-			<h2
-				class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1"
-			>
-				정글 리더보드에 자신의 이름을 정상에 올려보세요.
-			</h2>
+<section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 p-8">
+		
+        <div id="start-time-display" class="mb-6">
+            <!-- 🚨 수정된 부분: 서버 상태에 따른 조건부 렌더링 -->
+            {% if is_timing %}
+                <h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
+                <p class="text-3xl font-black text-green-700">{{ start_time_val }}</p>
+                <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
+                <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>
+            {% else %}
+                <p class="text-3xl font-black text-green-700">시작을 눌러 정글에서의 진짜 몰입 시간을 측정해보세요.</p>
+                <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">정글 리더보드에 자신의 이름을 정상에 올려보세요.</h2>
+            {% endif %}
 		</div>
 
-		<div
-			id="btn-container"
-			class="flex justify-center pt-6 border-t border-gray-50"
-		>
-			<button
-				id="start-btn"
-				onclick="startSession()"
-				class="w-2/5 shadow-sm border border-blue-300 bg-blue-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-blue-500/30 transition"
-			>
+		<div id="btn-container" class="flex {% if is_timing %}justify-between{% else %}justify-center{% endif %} pt-6 border-t border-gray-50">
+            <!-- 🚨 버튼들의 hidden 클래스 제어 -->
+			<button id="start-btn" onclick="startSession()" 
+                class="{% if is_timing %}hidden{% endif %} w-2/5 shadow-sm border border-blue-300 bg-blue-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-blue-500/30 transition">
 				시작
 			</button>
-			<button
-				id="pause-btn"
-				onclick="pauseSession()"
-				class="hidden w-2/5 shadow-sm border border-green-300 bg-green-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-green-500/30 transition"
-			>
+			<button id="pause-btn" onclick="pauseSession()" 
+                class="{% if not is_timing %}hidden{% endif %} w-2/5 shadow-sm border border-green-300 bg-green-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-green-500/30 transition">
 				휴식
 			</button>
-			<button
-				id="end-btn"
-				onclick="endSession()"
-				class="hidden w-2/5 shadow-sm border border-red-300 bg-red-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-red-500/30 transition"
-			>
+			<button id="end-btn" onclick="endSession()" 
+                class="{% if not is_timing %}hidden{% endif %} w-2/5 shadow-sm border border-red-300 bg-red-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-red-500/30 transition">
 				종료
 			</button>
 		</div>
-		<p
-			class="text-xl text-center text-gray-600 pt-4 italic font-medium"
-		>
-			"{{ quote }}"
-		</p>
+		<p class="text-xl text-center text-gray-600 pt-4 italic font-medium">"{{ quote }}"</p>
 	</section>
 
 	<section
@@ -132,4 +118,25 @@
 		</div>
 	</section>
 </div>
+{% if is_timing %}
+<script>
+    $(document).ready(function() {
+        // 서버에서 받아온 시작 시간을 세션 스토리지에 동기화 (main.js 호환용)
+        sessionStorage.setItem('serverStartTime', '{{ start_time_val }}');
+        
+        // 만약 세션 스토리지에 clientStartTime이 없다면(새 기기 접속 등), 
+        // 현재 시간을 기준으로 대략적인 타이머를 시작합니다.
+        if (!sessionStorage.getItem('clientStartTime')) {
+            sessionStorage.setItem('clientStartTime', Date.now());
+        }
+        
+        const clientStart = sessionStorage.getItem('clientStartTime');
+        const past = sessionStorage.getItem('pastTime') || 0;
+        
+        // main.js에 정의된 타이머 함수 호출
+        startStopwatch(clientStart, past);
+    });
+</script>
+{% endif %}
+
 {% endblock %}

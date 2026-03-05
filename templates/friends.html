@@ -1,207 +1,108 @@
 {% extends "base.html" %} {% block content %}
-<nav
-	class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all"
->
-	<div
-		class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center"
-	>
-		<div
-			class="font-bold text-3xl text-white tracking-tighter cursor-pointer"
-		>
-			정품타
-		</div>
-
-		<div
-			class="flex gap-6 text-white/80 font-medium text-md items-center"
-		>
-			<a href="/" class="hover:text-white">홈</a>
-			<a href="/realTimeUser" class="hover:text-white"
-				>실시간 접속자</a
-			>
-			<a href="/friends" class="hover:text-white">친구</a>
-			<a href="/myPage" class="hover:text-white">마이페이지</a>
-			<a
-				href="/logout"
-				onclick="
-					return confirm(
-						'정말 로그아웃 하시겠습니까? \n공부 시간 측정 중이라면 종료 버튼을 눌러주세요.'
-					);
-				"
-				class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition"
-				>로그아웃</a
-			>
-		</div>
-	</div>
+<nav class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+        <div class="font-bold text-3xl text-white tracking-tighter cursor-pointer" onclick="location.href='/'">정품타</div>
+        <div class="flex gap-6 text-white/80 font-medium text-md items-center">
+            <a href="/" class="hover:text-white">홈</a>
+            <a href="/realTimeUser" class="hover:text-white">실시간 접속자</a>
+            <a href="/friends" class="hover:text-white font-bold text-white">친구</a>
+            <a href="/myPage" class="hover:text-white">마이페이지</a>
+            <a href="/logout" onclick="return confirm('로그아웃 하시겠습니까?');" class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</a>
+        </div>
+    </div>
 </nav>
-<div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-16">
-	<section
-		class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative"
-	>
-		<div
-			class="p-6 border-b border-gray-100 flex justify-between items-center"
-		>
-			<h2 class="text-xl font-bold text-gray-800">친구 목록</h2>
-			<span
-				id="page-indicator"
-				class="text-sm font-medium text-green-700 bg-green-100 px-3 py-1 rounded-full"
-				>1 / 1</span
-			>
-		</div>
 
-		<div class="w-full">
-			<table class="w-full text-left table-fixed">
-				<thead
-					class="sticky top-0 bg-gray-50 text-gray-500 text-xs uppercase"
-				>
-					<tr>
-						<th class="px-6 py-4">닉네임</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임1</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임2</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임3</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임4</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임5</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임6</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임7</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임8</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임9</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임10</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임11</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-					<tr>
-						<th class="px-6 py-4">닉네임12</th>
-						<th class="px-6 py-4 text-right">총 공부 시간</th>
-					</tr>
-				</thead>
-				<tbody
-					id="friend-list-tbody"
-					class="divide-y divide-gray-50"
-				></tbody>
-			</table>
-		</div>
+<div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-8">
+    <!-- 친구 추가 섹션 -->
+    <section class="bg-white/90 p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">새로운 친구 추가</h2>
+        <div class="flex gap-2">
+            <input type="text" id="search-friend-id" placeholder="친구의 아이디를 입력하세요" 
+                   class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition">
+            <button onclick="addFriend()" class="bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-700 transition cursor-pointer">
+                추가
+            </button>
+        </div>
+    </section>
 
-		<div
-			class="flex justify-between items-center p-4 bg-gray-50/50 border-t border-gray-100"
-		>
-			<button
-				id="prev-page"
-				class="flex items-center gap-1 text-gray-500 hover:text-green-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
-			>
-				<svg
-					class="w-5 h-5"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M15 19l-7-7 7-7"
-					></path>
-				</svg>
-				이전
-			</button>
-			<button
-				id="next-page"
-				class="flex items-center gap-1 text-gray-500 hover:text-green-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
-			>
-				다음
-				<svg
-					class="w-5 h-5"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M9 5l7 7-7 7"
-					></path>
-				</svg>
-			</button>
-		</div>
-	</section>
-</div>
-<script>
-	//나중에 nick이랑 총공부시간 서버에서 받아와야됨. 여기도 jinja써야 되겠다. 뚫어놔야겠네//
+    <!-- 친구 목록 섹션 -->
+    <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-800">친구 목록 ({{ friends|length }}명)</h2>
+        </div>
 
-	const itemsPerPage = 10;
-	let currentPage = 1;
-
-	function renderTable() {
-		const totalPages = Math.ceil(allFreinds.length / itemsPerPage);
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
-		const currentData = allFreinds.slice(startIndex, endIndex);
-
-		let friendRows = '';
-		currentData.forEach((user) => {
-			html += `
+        <div class="w-full">
+            <table class="w-full text-left table-fixed">
+                <thead class="sticky top-0 bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="px-6 py-4">아이디 (닉네임)</th>
+                        <th class="px-6 py-4 text-right">총 공부 시간</th>
+                        <th class="px-6 py-4 text-center">관리</th>
+                    </tr>
+                </thead>
+                <tbody id="friend-list-tbody" class="divide-y divide-gray-50">
+                    <!-- 🚨 Jinja2 반복문 시작 -->
+                    {% for user in friends %}
                     <tr class="hover:bg-green-50/50 transition h-14"> 
-                        <td class="px-6 py-4 font-semibold text-gray-800">${user.name}</td>
-                        <td class="px-6 py-4 font-mono text-green-600 text-right">${user.total_time}</td>
-                     </tr>
-                `;
-		});
+                        <td class="px-6 py-4 font-semibold text-gray-800">
+                            {{ user.std_id }} <span class="text-xs text-gray-400 font-normal" onclick="location.href='/friendsprofile?profile={{ user.std_id }}'">({{ user.nickname }})</span>
+                        </td>
+                        <td class="px-6 py-4 font-mono text-green-600 text-right">{{ user.time_str }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="location.href='/friendsprofile?profile={{ user.std_id }}'" 
+                                        class="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-md hover:bg-blue-100 transition">프로필</button>
+                                <button onclick="deleteFriend('{{ user.std_id }}')" 
+                                        class="text-xs bg-red-50 text-red-600 px-3 py-1 rounded-md hover:bg-red-100 transition">삭제</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-10 text-center text-gray-400">친구가 없습니다. 새로운 친구를 추가해보세요!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 
-		$('friend-list-tbody').html(friendRows);
+<script>
+    // 친구 추가 기능
+    function addFriend() {
+        const friendId = $('#search-friend-id').val().trim();
+        if (!friendId) return alert('아이디를 입력해주세요.');
 
-		$('#page-indicator').text(`${currentPage} / ${totalPages}`);
-		$('#prev-page').prop('disabled', currentPage === 1);
-		$('#nest-page').prop('disabled', currentPage === totalPages);
+        $.ajax({
+            type: "POST",
+            url: `/friends?friends=${friendId}`,
+            success: function (response) {
+                if (response.result === 'success') {
+                    alert('친구 추가 성공!');
+                    location.reload(); 
+                } else {
+                    alert(response.message);
+                }
+            }
+        });
+    }
 
-		$('.overflow-y-auto').scrollTop(0);
-	}
+    // 친구 삭제 기능
+    function deleteFriend(friendId) {
+        if (!confirm(`${friendId}님을 삭제하시겠습니까?`)) return;
 
-	$('#prev-page').click(function () {
-		if (currentPage > 1) {
-			currentPage--;
-			renderTable();
-		}
-	});
-
-	$('#next-page').click(function () {
-		const totalPages = Math.ceil(allFreinds.length / itemsPerPage);
-		if (currentPage < totalPages) {
-			currentPage++;
-			renderTable();
-		}
-	});
-	renderTable();
+        $.ajax({
+            type: "DELETE",
+            url: `/friends?friends=${friendId}`,
+            success: function (response) {
+                if (response.result === 'success') {
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            }
+        });
+    }
 </script>
 {% endblock %}
