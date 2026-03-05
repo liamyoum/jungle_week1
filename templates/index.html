@@ -21,7 +21,7 @@
     <style>
       .jungle-bg {
             background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-                              url('../img/jungle.jpg');
+                              url("{{ url_for('static', filename='img/jungle.jpg') }}");
             background-size: cover;
             background-position: center;
       }
@@ -110,7 +110,6 @@
         </div>
       </section>
     </div>
-		<script>
-		</script>
+		<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 	</body>
 </html>

@@ -60,7 +60,7 @@ function startStopwatch(startTimeStr) {
 	const startTime = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5]);
 
 	// 기존 타이머 있을 경우 중복 실행 방지를 위해 제거
-	if (timeInterval) clearInterveal(timeInterval);
+	if (timeInterval) clearInterval(timeInterval);
 
 	timeInterval = setInterval(function () {
 		const now = new Date();
@@ -124,7 +124,7 @@ function pauseSession() {
 						.addClass(
 							'border-green-300 bg-green-500/80 hover:bg-red-500/30'
 						);
-					sessionStorage.setItem(newStartTime);
+					sessionStorage.setItem('startTime', newStartTime);
 				}
 			}
 		});
