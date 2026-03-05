@@ -62,36 +62,40 @@
                         <div id="progress-bar" class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full shadow-inner transition-all duration-1000" style="width: 75%;"></div>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-green-50 p-6 rounded-2xl border border-green-100">
-                        <p class="text-xs font-bold text-green-700 mb-1">총 공부시간</p>
-                        <p id="total-time" class="text-2xl font-black text-gray-800"> "{{ profile_inf.totaltime }}" </p>
-                    </div>
-                    <div class="bg-orange-50 p-6 rounded-2xl border border-orange-100">
-                        <p class="text-xs font-bold text-orange-700 mb-1">연속 학습</p>
-                        <p id="streak-days" class="text-2xl font-black text-gray-800"> "{{profile_inf.combo}}" </p>
-                    </div>
-                </div>
-
                 <div class="pt-6 border-t border-gray-100">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        응원 한마디 <span class="text-sm font-normal text-gray-400"></span>
+                    <h3
+                        class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"
+                    >
+                        응원 한마디
+                        <span class="text-sm font-normal text-gray-400">(3)</span>
                     </h3>
-                    
+
                     <div id="comment-list" class="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
-                        <div class="bg-gray-50 p-4 rounded-xl text-sm">
-                            <span class="font-bold text-green-700">열공중</span>: 오늘 하루도 고생 많으셨어요!
+                        {% for item in replys %}
+                        <div class="bg-gray-50 p-4 rounded-xl text-sm flex justify-between items-start group">
+                            <div>
+                                <span class="font-bold text-green-700">{{ item.id }}</span>: {{ item.reply }}
+                            </div>
+                            {% if item.id == session['user_id'] %} 
+                            <button onclick="deleteReply('{{ item.id }}')" class="text-xs text-red-400 opacity-0 group-hover:opacity-100 transition">삭제</button>
+                            {% endif %}
                         </div>
-                        <div class="bg-gray-50 p-4 rounded-xl text-sm">
-                            <span class="font-bold text-green-700">코딩왕</span>: 연속 15일이라니 대단합니다 ㄷㄷ
-                        </div>
+                        {% endfor %}
                     </div>
 
-                    <div class="flex gap-2 bg-gray-100 p-2 rounded-2xl focus-within:ring-2 focus-within:ring-green-500 transition-all">
-                        <input type="text" id="comment-input" placeholder="댓글을 입력하세요..." 
-                               class="flex-1 bg-transparent border-none outline-none px-3 text-sm" />
-                        <button id="submit-comment" class="bg-green-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-green-700 transition cursor-pointer">
+                    <div
+                        class="flex gap-2 bg-gray-100 p-2 rounded-2xl focus-within:ring-2 focus-within:ring-green-500 transition-all"
+                    >
+                        <input
+                            type="text"
+                            id="comment-input"
+                            placeholder="댓글을 입력하세요..."
+                            class="flex-1 bg-transparent border-none outline-none px-3 text-sm"
+                        />
+                        <button
+                            id="submit-comment"
+                            class="bg-green-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-green-700 transition cursor-pointer"
+                        >
                             등록
                         </button>
                     </div>
