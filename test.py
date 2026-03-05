@@ -22,14 +22,25 @@ def sectoformat(totaltime):
     return ret
 
 #리더보드와 친구 목록을 받아서 친구 목록에 해당하는지 bool로 출력
-#input=leaderboard,friendslist 
+#input=leaderboard,list,mode="friend"
 #output=bool type
 
-def friendfilter(leaderboard,friendslist):
-    for x in friendslist :
-        if x==leaderboard['std_id'] :
-            return True
-    return False
+def listfilter(leaderboard,list,mode="friend",str="std_"):
+    if mode=="friend":
+        
+        for x in list :
+            if x==leaderboard[str+'id'] :
+                return True
+        print(leaderboard,list)
+        return False
+    else:
+        print("no")  
+        for x in list :
+            if x==leaderboard[str+'id'] :
+                return False
+        return True
+
+
 
 #새벽4시로부터 지난 초를 계산해주는 함수
 #input=time
@@ -81,15 +92,19 @@ def reset():
 @app.route('/')
 def home():
 
-    return render_template('index.html')
+    return render_template('test.html')
 
 #현재 id(testid)의 현재 시간을 '년:월:일:시간:분:초'로 저장
 #output='nowtime':현재 시간
 @app.route('/timerstart', methods=['POST'])
 def start_time():
-    nowtime= time.strftime('%Y:%m:%d:%H:%M:%S')
+    fmt='%Y:%m:%d:%H:%M:%S'
+    nowtime= time.strftime(fmt)
+    startTimestamp = datetime.strptime(nowtime, fmt)
+    startTimestamp=am4cal(startTimestamp)
     target_user = db.user.find_one({'std_id': testid}, {'_id':0})
-
+    if int(startTimestamp)-int(target_user['today_times'][-1]['end_time'])<10:
+        return jsonify({'result': 'fail','message':'10초 후에 다시 시도해주세요!'})
     if target_user is None:
         return jsonify({'result': 'fail','message':'no user'})
 
@@ -137,8 +152,11 @@ def end_time():
 
     thisSestime=sectoformat(thisSestimesec)
     totaltimeret=sectoformat(totaltime)
-    
+    if endTimestamp-startTimestamp<3:
+        return jsonify({'result': 'fail','message':'최소 3초 이상이여야 합니다!'})
+
     todaytimes.append({'start_time': str(startTimestamp), 'end_time': str(endTimestamp)})
+    
 
     db.user.update_one(
     {'std_id': testid}, 
@@ -155,17 +173,27 @@ def end_time():
 #input=sortMode->all,friends
 #output='leaderboard':해당 인원들의 전체 정보,'myleader':내 순위 'myleaderboard':내 리더보드
 
+
+
 @app.route('/leaderboard', methods=['GET'])
 def load_leaderboard():
     filterMode = request.args.get('sortMode', 'all')
     me = db.user.find_one({'std_id': testid}, {'_id':0})
+    
     if filterMode == 'all':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
+        if 'ban_id' in me:
+            leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
+
     elif filterMode =='friends':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
         friends=[testid]
         friends+=me['friends']
-        leaderboard=list(filter(lambda x: friendfilter(x, friends),leaderboard))
+        leaderboard=list(filter(lambda x: listfilter(x, friends),leaderboard))
+        if 'ban_id' in me :
+            leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
+
+
     else:
         return jsonify({'result': 'fail','message':'no current filter'})
     
@@ -191,24 +219,81 @@ def profileshow():
     if profile == '':
         profile=testid
     
-    target_user = db.reply.find_one({'std_id': profile}, {'_id':0})
+    target_user = db.reply.find_one({'std_id': profile}, {'admin':0,'_id':0})
     target_user_profile = db.user.find_one({'std_id': profile}, {'_id':0})
     
     if target_user_profile is None :
         return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
     
-    if 'replys' in target_user:
+    if None != target_user:
         replys = target_user['replys']
 
     else:
         return jsonify({'result':'success','profile_inf':target_user_profile,'replys':[]})
     
-    
-    
+    me = db.user.find_one({'std_id': testid}, {'_id':0})
+    if 'ban_id' in me :
+        replys=list(filter(lambda x: listfilter(x, me['ban_id'],"ban",str=""),replys))
 
     return jsonify({'result':'success','profile_inf':target_user_profile,'replys':replys})
 
+#memberlist 멤버리스트
 
+@app.route('/memberlist', methods=['GET'])
+def load_memberlist():
+    filterMode = request.args.get('sortMode')
+    me = db.user.find_one({'std_id': testid}, {'_id':0})
+    
+    if filterMode == 'Now':
+        leaderboard = list(db.user.find({'start_time':{'$ne':None}}, {'_id':0}).sort('total_time',-1))
+        if 'ban_id' in me :
+            leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
+        return jsonify({'result':'success','memberlist':leaderboard[:30]})
+        
+
+    elif filterMode =='friends':
+        leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
+        friends=[testid]
+        friends+=me['friends']
+        leaderboard=list(filter(lambda x: listfilter(x, friends),leaderboard))
+        if 'ban_id' in me :
+            leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
+        return jsonify({'result':'success','memberlist':leaderboard[:30]})
+
+    elif filterMode =='friends':
+        leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
+        if 'ban_id' in me :
+            leaderboard=list(filter(lambda x: listfilter(x, me['ban_id']),leaderboard))
+        return jsonify({'result':'success','memberlist':leaderboard[:30]})
+
+
+    else:
+        return jsonify({'result': 'fail','message':'no current filter'})
+
+
+
+@app.route('/ban',methods=['POST'])
+def banuser():
+    ban_id=request.args.get('ban_id','')
+    if ban_id is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+    if db.user.find_one({'std_id': ban_id}, {'_id':0}) is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})    
+        
+    db.user.update_one({'std_id': testid},{'$push': {'ban_id': ban_id}})
+    return jsonify({'result':'success'})
+    
+@app.route('/ban',methods=['DELETE'])
+def unbanuser():
+    ban_id=request.args.get('ban_id','')
+    if ban_id is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+    if db.user.find_one({'std_id': ban_id}, {'_id':0}) is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+        
+    db.user.update_one({'std_id': testid},{'$pull': {'ban_id': ban_id}})
+    return jsonify({'result':'success'})
+    
 
 #'person'과 'text'를 받아서 person의 댓글에 현재 계정으로 작성하는 함수
 #input='text'->댓글 내용,'person'->누구에게 댓글을 쓰는지
@@ -221,19 +306,39 @@ def wirtereply():
     if text =='':
         return jsonify({'result': 'fail','message':'no_text'})
     target_user = db.reply.find_one({'std_id': person}, {'_id':0})
+    count=db.reply.find_one({'admin':1}, {'_id':0})
+    if  count is None:
+        db.reply.insert_one({'admin':1,'counter':1})
+        count['counter']=1    
+    
+    countnum=count['counter']
 
 
     if target_user is None:
-        db.reply.insert_one({'std_id': person,'replys':{'id':testid,'reply':text}})
+        db.reply.insert_one({'admin':0,'std_id': person,'replys':[{'id':testid,'reply':text,'reply_id':countnum}]})
 
     else:
         replys=target_user['replys']
-        replys.append({'id':testid,'reply':text})
+        replys.append({'id':testid,'reply':text,'reply_id':countnum})
         db.reply.update_one(
             {'std_id': person},
             {'$set': {'replys': replys}}
         )
+        db.reply.update_one(
+            {'counter': countnum},
+            {'$set': {'counter': (countnum+1)}}
+        )
     return jsonify({'result':'success'})
+
+#댓글의 id받아서 해당 댓글을 지움
+#input='del_id' 지울 댓글 id
+@app.route('/profile', methods=['DELETE'])
+def delreply():    
+    del_id=request.args.get('del_id','')    
+    db.reply.delete_one({'std_id': testid},{'$pull': {'replys': {'id': del_id}}})
+    return jsonify({'result':'success'})
+
+
 
 #명언 랜덤 출력
 #output='quote':명언 랜덤 하나
@@ -244,6 +349,7 @@ def randquote():
         return jsonify({'result': 'fail', 'message': 'no quotes'})
     retquote = random.choice(quotes) 
     return jsonify({'result': 'success', 'quote': retquote})
+
 
 
 if __name__ == '__main__':

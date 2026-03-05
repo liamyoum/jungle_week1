@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Jungle Crafton 통합 테스트</title>
+    <style>
+        .box { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; width: 400px; display: inline-block; vertical-align: top; }
+        pre { background: #222; color: #0f0; padding: 10px; overflow-x: auto; max-height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>API 통합 테스트 (Current ID: 1557)</h1>
+
+    <div class="box">
+        <h3>1. 타이머</h3>
+        <button onclick="req('POST', '/timerstart')">시작</button>
+        <button onclick="req('POST', '/timerend')">종료</button>
+        <div id="res-timer"></div>
+    </div>
+
+    <div class="box">
+        <h3>2. 리더보드 & 멤버</h3>
+        <button onclick="req('GET', '/leaderboard?sortMode=all')">전체 리더보드</button>
+        <button onclick="req('GET', '/memberlist?sortMode=Now')">멤버(Now)</button>
+        <div id="res-leader"></div>
+    </div>
+
+    <div class="box">
+        <h3>3. 밴(Ban) 기능</h3>
+        <input id="ban-id" placeholder="유저ID">
+        <button onclick="req('POST', '/ban?ban_id=' + document.getElementById('ban-id').value)">밴 추가</button>
+        <button onclick="req('DELETE', '/ban?ban_id=' + document.getElementById('ban-id').value)">밴 삭제</button>
+        <div id="res-ban"></div>
+    </div>
+
+    <div class="box">
+        <h3>4. 프로필 & 댓글</h3>
+        <input id="p-id" placeholder="조회할ID">
+        <button onclick="req('GET', '/profile?profile=' + document.getElementById('p-id').value)">조회</button>
+        <br><br>
+        <input id="reply-to" placeholder="대상ID">
+        <input id="reply-text" placeholder="내용">
+        <button onclick="req('POST', `/profile?person=${document.getElementById('reply-to').value}&replytext=${document.getElementById('reply-text').value}`)">댓글작성</button>
+        <br><br>
+        <input id="del-id" placeholder="지울 reply_id">
+        <button onclick="req('DELETE', '/profile?del_id=' + document.getElementById('del-id').value)">댓글삭제</button>
+        <div id="res-profile"></div>
+    </div>
+
+    <script>
+        async function req(method, url) {
+            const res = await fetch(url, { method: method });
+            const data = await res.json();
+            // 요청 url에 따라 적절한 곳에 출력
+            let targetId = 'res-timer';
+            if(url.includes('leader') || url.includes('member')) targetId = 'res-leader';
+            else if(url.includes('ban')) targetId = 'res-ban';
+            else if(url.includes('profile')) targetId = 'res-profile';
+            
+            document.getElementById(targetId).innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+    </script>
+</body>
+</html>
