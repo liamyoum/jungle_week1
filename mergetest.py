@@ -56,53 +56,63 @@ scheduler.start()
 
 def timecal():
     target_user = db.user.find_one({'std_id': g.user_id}, {'_id':0})
-    print(target_user)
-    if target_user is None:
-        return {'result': 'fail','message':'no user_end'}
-    if "start_time" in target_user: 
-        if None ==target_user['start_time']:
-            return {'result': 'fail','message':'no_start_time'}
-
-        starttime=target_user['start_time']
     
+    if target_user is None:
+        return {'result': 'fail', 'message': '유저 정보가 없습니다.'}
+        
+    if "start_time" in target_user: 
+        if target_user['start_time'] is None:
+            return {'result': 'fail', 'message': '시작 시간이 없습니다.'}
+        starttime = target_user['start_time']
     else:
-        return {'result': 'fail','message':'no_start_time'}
+        return {'result': 'fail', 'message': '시작 시간이 없습니다.'}
 
-    totaltime=target_user['total_time']
-    todaytimes=target_user['todaytimes']
+    # 언더바 뺀 todaytimes 사용! (오류 방지를 위해 .get 사용)
+    totaltime = target_user.get('total_time', 0)
+    todaytimes = target_user.get('todaytimes',[])
 
     fmt = '%Y:%m:%d:%H:%M:%S'
-
-    nowtime= time.strftime(fmt)
+    nowtime = time.strftime(fmt)
     startTimestamp = datetime.strptime(starttime, fmt)
     endTimestamp = datetime.strptime(nowtime, fmt)
 
-    thisSestime=endTimestamp-startTimestamp
-    thisSestimesec=thisSestime.seconds + thisSestime.days*86400
-    totaltime+=thisSestimesec
-
-    startTimestamp=am4cal(startTimestamp)
-    endTimestamp=am4cal(endTimestamp)
-
-    thisSestime=sectoformat(thisSestimesec)
-    totaltimeret=sectoformat(totaltime)
-    if endTimestamp-startTimestamp<3:
-        return {'result': 'fail','message':'최소 3초 이상이여야 합니다!'}
-
-    todaytimes.append({'start_time': str(startTimestamp), 'end_time': str(endTimestamp)})
+    thisSestime = endTimestamp - startTimestamp
+    thisSestimesec = thisSestime.seconds + thisSestime.days * 86400
     
+    # 🚨 중요: 3초 미만으로 쉬면 에러가 납니다! 테스트하실 때 시작 누르고 3초 뒤에 휴식을 눌러주세요.
+    if thisSestimesec < 3:
+        return {'result': 'fail', 'message': '최소 3초 이상 집중해야 기록됩니다!'}
 
+    totaltime += thisSestimesec
+
+    start_am4 = am4cal(startTimestamp)
+    end_am4 = am4cal(endTimestamp)
+
+    thisSestime_format = sectoformat(thisSestimesec)
+    totaltimeret = sectoformat(totaltime)
+
+    todaytimes.append({'start_time': str(start_am4), 'end_time': str(end_am4)})
+    
+    # DB 업데이트
     db.user.update_one(
-    {'std_id': g.user_id}, 
-    {'$set': {
-        'total_time': totaltime,
-        'today_times':todaytimes,
-        'start_time':None,
-        'last_session':thisSestime
-    }}      
+        {'std_id': g.user_id}, 
+        {'$set': {
+            'total_time': totaltime,
+            'todaytimes': todaytimes,  # 언더바 없는 todaytimes로 저장
+            'start_time': None,
+            'last_session': thisSestime_format
+        }}      
     )
-
-    return {'result':'success', 'totaltime':totaltimeret,'thisSestime':thisSestime,'todaytimes':todaytimes}
+                                 
+    # 🚨 중요: JS에서 휴식 처리를 위해 요구하는 'this_session_seconds'를 반드시 보내줘야 합니다.
+    return {
+        'result': 'success', 
+        'totaltime': totaltimeret,
+        'thisSestime': thisSestime_format,
+        'todaytimes': todaytimes, 
+        'this_session_seconds': thisSestimesec
+    }
+    
 
 def utcnow():
     return datetime.utcnow()
@@ -484,31 +494,32 @@ def reset():
 
 #현재 id(g.user_id)의 현재 시간을 '년:월:일:시간:분:초'로 저장
 #output='nowtime':현재 시간
+
 @app.route('/timerstart', methods=['POST'])
 @login_required_api
 def start_time():
     fmt='%Y:%m:%d:%H:%M:%S'
-    nowtime= time.strftime(fmt)
+    nowtime = time.strftime(fmt)
     startTimestamp = datetime.strptime(nowtime, fmt)
-    startTimestamp=am4cal(startTimestamp)
-    print(g.user_id,"여기에 g")
+    startTimestamp = am4cal(startTimestamp)
+    
     target_user = db.user.find_one({'std_id': g.user_id}, {'_id':0})
     if target_user is None:
-        return jsonify({'result': 'fail','message':'no user_start'})
-    if 'today_times' not in target_user:
-        target_user['today_times']=[]
+        return jsonify({'result': 'fail', 'message': '유저 정보가 없습니다.'})
         
-    if len(target_user['today_times']) > 0:
-    
-        if int(startTimestamp)-int(target_user['today_times'][-1]['end_time'])<10:
-            return jsonify({'result': 'fail','message':'10초 후에 다시 시도해주세요!'})
+    # 여기서도 언더바 없는 todaytimes로 검사
+    todaytimes = target_user.get('todaytimes',[])
+        
+    if len(todaytimes) > 0:
+        if int(startTimestamp) - int(todaytimes[-1]['end_time']) < 1:
+            return jsonify({'result': 'fail', 'message': '휴식 후 10초 후에 다시 시작할 수 있습니다!'})
         
     db.user.update_one(
-            {'std_id': g.user_id},
-            {'$set': {'start_time': nowtime}}
-        )
+        {'std_id': g.user_id},
+        {'$set': {'start_time': nowtime}}
+    )
 
-    return jsonify({'result': 'success','nowtime':nowtime})
+    return jsonify({'result': 'success', 'nowtime': nowtime})
 
 #현재 id의 진행되고 있는 시간 측정을 끝내는 함수
 #output='totaltime':총 시간 초,'thisSestime':이번 세션 초,'todaytimes':총 시간
@@ -518,6 +529,8 @@ def start_time():
 @login_required_api # 추가된 데코레이터
 def end_time():
     return jsonify(timecal())
+
+
 
 #유저를 전부 읽어서 총 숫자를 내림차순으로 정렬 후 최대 30명까지 출력하는 함수
 #input=sortMode->all,friends

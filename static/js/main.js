@@ -1,163 +1,182 @@
 $(document).ready(function () {
-	const savedStartTime = sessionStorage.getItem('startTime');
-	if (savedStartTime) {
-		const accumulated = sessionStorage.getItem('pastTime') || 0;
+    // 1. 뒤로가기 캐시(bfcache) 방지: 뒤로가기로 왔을 때 타이머 꼬임 방지
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
 
-		// 새로고침해도 스탑워치 UI가 유지되도록 HTML 삽입
-		let timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
-              <p class="text-3xl font-black text-green-700">${savedStartTime}</p>
-              <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
-              <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>`;
+    const clientStartTime = sessionStorage.getItem('clientStartTime');
+    const serverStartTime = sessionStorage.getItem('serverStartTime');
+    const pastTime = sessionStorage.getItem('pastTime');
 
-		$('#start-time-display').html(timehtml);
+    if (clientStartTime && serverStartTime) {
+        //[상태 A] 새로고침 했는데 현재 '공부 중'인 경우
+        const accumulated = parseInt(pastTime) || 0;
+        let timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
+            <p class="text-3xl font-black text-green-700">${serverStartTime}</p>
+            <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
+            <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>`;
 
-		$('#start-btn').addClass('hidden');
-		$('#pause-btn').removeClass('hidden');
-		$('#end-btn').removeClass('hidden');
-		$('#btn-container')
-			.removeClass('justify-center')
-			.addClass('justify-between');
+        $('#start-time-display').html(timehtml);
+        $('#start-btn').addClass('hidden');
+        $('#pause-btn').removeClass('hidden').text('휴식');
+        $('#end-btn').removeClass('hidden');
+        $('#btn-container').removeClass('justify-center').addClass('justify-between');
 
-		startStopwatch(savedStartTime, accumulated);
-	}
+        startStopwatch(clientStartTime, accumulated);
+
+    } else if (pastTime) {
+        //[상태 B] 새로고침 했는데 현재 '휴식 중'인 경우 (이 부분이 없어서 0으로 초기화 됐었음!)
+        const accumulated = parseInt(pastTime) || 0;
+        let timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
+            <p class="text-3xl font-black text-gray-400">휴식 중</p>
+            <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
+            <p id="stopwatch-display" class="text-3xl font-black text-green-700">${formatTime(accumulated)}</p>`;
+
+        $('#start-time-display').html(timehtml);
+        $('#start-btn').addClass('hidden');
+        $('#pause-btn').removeClass('hidden').text('재개')
+            .removeClass('border-green-300 bg-green-500/80 hover:bg-red-500/30')
+            .addClass('border-yellow-300 bg-yellow-600/80 hover:bg-blue-500/30');
+        $('#end-btn').removeClass('hidden');
+        $('#btn-container').removeClass('justify-center').addClass('justify-between');
+    }
 });
 
+// 초(seconds)를 00:00:00 형식으로 변환하는 함수
+function formatTime(totalSeconds) {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
 function startSession() {
-	// 새 세션을 시작할 때는 이전 과거 누적 시간을 초기화합니다.
-	sessionStorage.removeItem('pastTime');
+    sessionStorage.removeItem('pastTime'); // 새 세션이므로 누적 시간 초기화
 
-	$.ajax({
-		type: 'POST',
-		url: '/timerstart',
-		data: {},
-		success: function (response) {
-			if (response['result'] == 'success') {
-				const serverStartTime = response['nowtime'];
-				sessionStorage.setItem('startTime', serverStartTime);
+    $.ajax({
+        type: 'POST',
+        url: '/timerstart',
+        data: {},
+        success: function (response) {
+            if (response['result'] == 'success') {
+                const serverStartTime = response['nowtime'];
+                const clientStartTime = Date.now(); // 서버 시간 대신 브라우저 시간 기준 사용
+                
+                sessionStorage.setItem('serverStartTime', serverStartTime);
+                sessionStorage.setItem('clientStartTime', clientStartTime);
 
-				let timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
-              <p class="text-3xl font-black text-green-700">${serverStartTime}</p>
-              <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
-              <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>`;
+                let timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
+            <p class="text-3xl font-black text-green-700">${serverStartTime}</p>
+            <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
+            <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>`;
 
-				$('#start-time-display').html(timehtml);
+                $('#start-time-display').html(timehtml);
+                $('#start-btn').addClass('hidden');
+                $('#pause-btn').removeClass('hidden').text('휴식');
+                $('#end-btn').removeClass('hidden');
+                $('#btn-container').removeClass('justify-center').addClass('justify-between');
 
-				$('#start-btn').addClass('hidden');
-				$('#pause-btn').removeClass('hidden');
-				$('#end-btn').removeClass('hidden');
-
-				$('#btn-container')
-					.removeClass('justify-center')
-					.addClass('justify-between');
-
-				startStopwatch(serverStartTime);
-			} else {
+                startStopwatch(clientStartTime, 0);
+            } else {
                 alert(response['message']);
             }
-		},
-		error: function (err) {
-            console.log(err);
+        },
+        error: function (err) {
             alert("타이머 시작에 실패했습니다. 로그인을 다시 확인해주세요.");
         }
-	});
+    });
 }
 
 let timeInterval;
-let totalSeconds = 0;
 
-function startStopwatch(startTimeStr, pastTime = 0) {
-	const t = startTimeStr.split(':'); 
-	const startTime = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5]);
+function startStopwatch(clientStartTime, pastTime = 0) {
+    if (timeInterval) clearInterval(timeInterval);
 
-	if (timeInterval) clearInterval(timeInterval);
+    timeInterval = setInterval(function () {
+        const now = Date.now();
+        const diff = now - parseInt(clientStartTime);
 
-	timeInterval = setInterval(function () {
-		const now = new Date();
-		const diff = now - startTime;
-
-		totalSeconds = Math.floor(diff / 1000) + parseInt(pastTime);
-
-		const h = Math.floor(totalSeconds / 3600);
-		const m = Math.floor((totalSeconds % 3600) / 60);
-		const s = totalSeconds % 60;
-
-		const displayTime =
-			String(h).padStart(2, '0') +
-			':' +
-			String(m).padStart(2, '0') +
-			':' +
-			String(s).padStart(2, '0');
-
-		$('#stopwatch-display').text(displayTime);
-	}, 1000);
+        const totalSeconds = Math.floor(diff / 1000) + parseInt(pastTime);
+        $('#stopwatch-display').text(formatTime(totalSeconds));
+    }, 1000);
 }
 
 function pauseSession() {
-	if ($('#pause-btn').text() == '휴식') {
-		clearInterval(timeInterval);
+    if ($('#pause-btn').text() == '휴식') {
+        $.ajax({
+            type: 'POST',
+            url: '/timerend',
+            data: {},
+            success: function (response) {
+                if (response['result'] == 'success') {
+                    // 서버 승인이 나면 그제서야 타이머를 멈춥니다! (고장나는 화면 방지)
+                    clearInterval(timeInterval);
+                    
+                    const sessionSeconds = response['this_session_seconds'];
+                    let currentPast = parseInt(sessionStorage.getItem('pastTime')) || 0;
+                    const newPast = currentPast + sessionSeconds;
+                    sessionStorage.setItem('pastTime', newPast);
 
-		$.ajax({
-			type: 'POST',
-			url: '/timerend',
-			data: {},
-			success: function (response) {
-				console.log('서버 응답:', response); 
+                    sessionStorage.removeItem('clientStartTime');
+                    sessionStorage.removeItem('serverStartTime');
 
-				if (response['result'] == 'success') {
-					// 변경됨: 서버에서 제공하는 정확한 이번 세션 시간(초)을 사용
-					const sessionSeconds = response['this_session_seconds'];
+                    $('#pause-btn').text('재개');
+                    $('#pause-btn')
+                        .removeClass('border-green-300 bg-green-500/80 hover:bg-red-500/30')
+                        .addClass('border-yellow-300 bg-yellow-600/80 hover:bg-blue-500/30');
+                    
+                    $('#stopwatch-display').text(formatTime(newPast));
+                    $('#start-time-display p:first').text('휴식 중').removeClass('text-green-700').addClass('text-gray-400');
+                } else {
+                    alert(response['message'] || '잠시 후 다시 시도해주세요!');
+                }
+            }
+        });
+    } else {
+        // 재개 요청
+        $.ajax({
+            type: 'POST',
+            url: '/timerstart',
+            data: {},
+            success: function (response) {
+                if (response['result'] == 'success') {
+                    const newServerStartTime = response['nowtime'];
+                    const newClientStartTime = Date.now();
+                    const accumulated = parseInt(sessionStorage.getItem('pastTime')) || 0;
 
-					let currentPast = parseInt(sessionStorage.getItem('pastTime')) || 0;
-					sessionStorage.setItem('pastTime', currentPast + sessionSeconds);
+                    sessionStorage.setItem('serverStartTime', newServerStartTime);
+                    sessionStorage.setItem('clientStartTime', newClientStartTime);
 
-					$('#pause-btn').text('재개');
-					$('#pause-btn')
-						.removeClass('border-green-300 bg-green-500/80 hover:bg-red-500/30')
-						.addClass('border-yellow-300 bg-yellow-600/80 hover:bg-blue-500/30');
-                        
-					sessionStorage.removeItem('startTime'); 
-				} else {
-					alert(response['message'] || '잠시 후 다시 시도해주세요!');
-				}
-			}
-		});
-	} else {
-		// 재개 버튼 누를 때
-		$.ajax({
-			type: 'POST',
-			url: '/timerstart',
-			data: {},
-			success: function (response) {
-				if (response['result'] == 'success') {
-					const newStartTime = response['nowtime'];
-					const accumulated = sessionStorage.getItem('pastTime') || 0;
+                    $('#pause-btn').text('휴식');
+                    $('#pause-btn')
+                        .removeClass('border-yellow-300 bg-yellow-600/80 hover:bg-blue-500/30')
+                        .addClass('border-green-300 bg-green-500/80 hover:bg-red-500/30');
+                    
+                    $('#start-time-display p:first').text(newServerStartTime).removeClass('text-gray-400').addClass('text-green-700');
 
-					$('#pause-btn').text('휴식');
-					$('#pause-btn')
-						.removeClass('border-yellow-300 bg-yellow-600/80 hover:bg-blue-500/30')
-						.addClass('border-green-300 bg-green-500/80 hover:bg-red-500/30');
-                        
-					sessionStorage.setItem('startTime', newStartTime);
-					startStopwatch(newStartTime, accumulated);
-				} else {
-					alert(response['message']);
-				}
-			}
-		});
-	}
+                    startStopwatch(newClientStartTime, accumulated);
+                } else {
+                    alert(response['message']);
+                }
+            }
+        });
+    }
 }
 
 function endSession() {
-	if (!confirm('정말 종료 하시겠습니까?')) return;
+    if (!confirm('정말 종료 하시겠습니까?')) return;
 
-	if ($('#pause-btn').text() == '재개') {
-		sessionStorage.removeItem('startTime');
-        sessionStorage.removeItem('pastTime');
-		alert('수고하셨습니다! 결과 페이지로 이동합니다.');
-		window.location.href = '/result';
-	} else {
-        sessionStorage.removeItem('startTime');
-        sessionStorage.removeItem('pastTime');
-		window.location.href = '/result';
-	}
+    // 완전히 종료할 때는 브라우저에 저장된 임시 데이터를 모두 깔끔하게 날립니다.
+    sessionStorage.removeItem('clientStartTime');
+    sessionStorage.removeItem('serverStartTime');
+    sessionStorage.removeItem('pastTime');
+
+    if ($('#pause-btn').text() == '재개') {
+        alert('수고하셨습니다! 결과 페이지로 이동합니다.');
+        window.location.href = '/result';
+    } else {
+        window.location.href = '/result';
+    }
 }
