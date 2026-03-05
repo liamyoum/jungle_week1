@@ -55,7 +55,7 @@ function startSession() {
 let timeInterval;
 let totalSeconds = 0;
 
-function startStopwatch(startTimeStr) {
+function startStopwatch(startTimeStr, pastTime = 0) {
 	const t = startTimeStr.split(':'); // array, ex) [2026, 03, 04, 12, 05, 05];
 	const startTime = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5]);
 
@@ -66,7 +66,7 @@ function startStopwatch(startTimeStr) {
 		const now = new Date();
 		const diff = now - startTime;
 
-		totalSeconds = Math.floor(diff / 1000);
+		totalSeconds = Math.floor(diff / 1000) + parseInt(pastTime);
 
 		const h = Math.floor(totalSeconds / 3600);
 		const m = Math.floor((totalSeconds % 3600) / 60);
@@ -89,10 +89,21 @@ function pauseSession() {
 
 		$.ajax({
 			type: 'POST',
-			url: 'timerend',
+			url: '/timerend',
 			data: {},
 			success: function (response) {
 				if (response['result'] == 'success') {
+					const start = new Date(response['start_time']);
+					const end = new Date(response['end_time']);
+					const sessionSeconds = Math.floor((end - start) / 1000);
+
+					let currentPast =
+						parseInt(sessionStorage.getItem('pastTime')) || 0;
+					sessionStorage.setItem(
+						'pastTime',
+						currentPast + sessionSeconds
+					);
+
 					$('#pause-btn').text('재개');
 					$('#pause-btn')
 						.removeClass(
@@ -103,6 +114,8 @@ function pauseSession() {
 						);
 					sessionStorage.removeItem('startTime'); // 서버에서 start_time도 None 됨
 					alert('휴식 시작!');
+				} else {
+					alert('잠시 후 다시 시도해주세요!');
 				}
 			}
 		});
@@ -116,6 +129,8 @@ function pauseSession() {
 				if (response['result'] == 'success') {
 					const newStartTime = response['nowtime'];
 
+					const accumulated = sessionStorage.getItem('pastTime') || 0;
+
 					$('#pause-btn').text('휴식');
 					$('#pause-btn')
 						.removeClass(
@@ -125,6 +140,10 @@ function pauseSession() {
 							'border-green-300 bg-green-500/80 hover:bg-red-500/30'
 						);
 					sessionStorage.setItem('startTime', newStartTime);
+
+					startStopwatch(newStartTime, accumulated);
+				} else {
+					alert('잠시 후 다시 시도해주세요!');
 				}
 			}
 		});
@@ -146,7 +165,7 @@ function endSession() {
 				if (response['result'] == 'success') {
 					sessionStorage.removeItem('startTime'); // 서버에서 start_time도 None 됨
 					alert('수고하셨습니다! 결과 페이지로 이동합니다.');
-					window.location.href = 'result';
+					window.location.href = '/result';
 				}
 			},
 			error: function () {
