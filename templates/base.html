@@ -35,43 +35,70 @@
 		<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 		<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 		<script>
-			// login/signup 페이지에서는 실행하지 않도록 체크
-			if (
+				let heartbeatTimer;
+
+				// login/signup 페이지에서는 실행하지 않도록 체크
+				if (
 				!location.pathname.startsWith('/login') &&
 				!location.pathname.startsWith('/signup')
-			) {
+				) {
+
 				async function heartbeatOnce() {
 					let r = await fetch('/api/heartbeat', {
-						method: 'POST',
-						credentials: 'include'
+					method: 'POST',
+					credentials: 'include'
 					});
 
 					// access 만료 시 refresh
 					if (r.status === 401) {
-						const rr = await fetch('/api/refresh', {
-							method: 'POST',
-							credentials: 'include'
-						});
+					const rr = await fetch('/api/refresh', {
+						method: 'POST',
+						credentials: 'include'
+					});
 
-						if (rr.ok) {
-							await fetch('/api/heartbeat', {
-								method: 'POST',
-								credentials: 'include'
-							});
-						} else {
-							location.href = '/login';
-						}
+					if (rr.ok) {
+						await fetch('/api/heartbeat', {
+						method: 'POST',
+						credentials: 'include'
+						});
+					} else {
+						logout();
+					}
 					}
 				}
 
+				// 최초 실행
 				heartbeatOnce();
 
-				setInterval(heartbeatOnce, 5000);
+				// heartbeat 반복
+				heartbeatTimer = setInterval(heartbeatOnce, 5000);
 
+				// 탭 다시 활성화되면 heartbeat
 				document.addEventListener('visibilitychange', () => {
 					if (!document.hidden) heartbeatOnce();
 				});
-			}
+				}
+
+
+				// 로그아웃 함수
+				async function logout() {
+				try {
+					await fetch('/api/logout', {
+					method: 'POST',
+					credentials: 'include'
+					});
+				} catch (e) {
+					console.error('logout request failed', e);
+				}
+
+				// heartbeat 중지
+				if (heartbeatTimer) {
+					clearInterval(heartbeatTimer);
+				}
+
+				// 로그인 페이지 이동
+				location.href = '/login';
+				}
 		</script>
 	</body>
 </html>
