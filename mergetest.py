@@ -102,7 +102,7 @@ def timecal():
         'start_time':None
     }}      
     )
-                                 
+
     return {'result':'success', 'totaltime':totaltimeret,'thisSestime':thisSestime,'todaytimes':todaytimes}
 
 @app.route('/')
