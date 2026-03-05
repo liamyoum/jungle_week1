@@ -133,7 +133,7 @@
 							$('#start-time-display').html(timehtml);
 
 							// 3. 이제 00:00:00부터 올라가는 스탑워치를 실행합니다.
-							startStopwatch(startTime);
+							startStopwatch(serverStartTime);
 
 						}
 					}
@@ -143,15 +143,22 @@
 			function startStopwatch(startTimeStr) {
 				console.log(startTimeStr);
 
-				const t = startTimeStr.split(':'); // array, ex) [2026, 03, 04, 12, 05, 05]
-				const startTime = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5])
+				const t = startTimeStr.split(':'); // array, ex) [2026, 03, 04, 12, 05, 05];
+				const startTime = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5]);
 
         setInterval(function() {
           const now = new Date();
           const diff = now - startTime;
-          const seconds = Math.floor(diff / 1000);
-          $('#stopwatch-display').text(seconds)
-        }, 1000)
+          const totalSeconds = Math.floor(diff / 1000);
+
+          const h = Math.floor(totalSeconds / 3600);
+          const m = Math.floor((totalSeconds % 3600) / 60);
+          const s = totalSeconds % 60;
+          
+          const displayTime = String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
+          
+          $('#stopwatch-display').text(displayTime);
+        }, 1000);
 			}
 
       function pauseSession() {}
