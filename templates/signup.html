@@ -36,15 +36,15 @@
                     <div class="space-y-6">
                         <div>
                             <label class="mb-2 block font-bold text-[#2D4B1F]">Student ID</label>
-                            <input type="text" id="signupId" placeholder="두 자리 숫자로 입력해주세요 ex: 17" class="w-full bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
+                            <input type="text" id="id_give" placeholder="두 자리 숫자로 입력해주세요 ex: 17" class="w-full bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
                         </div>
                         <div>
                             <label class="mb-2 block font-bold text-[#2D4B1F]">Password</label>
-                            <input type="password" id="signupPw" placeholder="최대 13자리" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
+                            <input type="password" id="pw_give" placeholder="최대 20자리" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
                         </div>
                         <div>
                             <label class="mb-2 block font-bold text-[#2D4B1F]">Nickname</label>
-                            <input type="text" id="signupNick" placeholder="최대 20자리" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
+                            <input type="text" id="nick_give" placeholder="최대 20자리" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
                         </div>
                         <div id="error-msg" class="text-red-500 text-xs mt-2 hidden text-center">
                             <!-- 회원가입 조건 불충족 시 -->
@@ -56,9 +56,9 @@
         </div>
         <script>
 			function signUp() {
-                const id = $('#signupId').val();
-                const pw = $('#signupPw').val();
-                const nick = $('#signupNick').val();
+                const id = $('#id_give').val();
+                const pw = $('#pw_give').val();
+                const nick = $('#nick_give').val();
 
                 const idPattern = /^\d{2}$/; // 무조건 숫자 두 자리, 사용자 수 많아져서 확장하려면 수정 필요
 
@@ -71,7 +71,7 @@
                     return;
                 }
 
-                else if (!idPattern.test(id) || pw.length > 13 || nick.length > 20) {
+                else if (!idPattern.test(id) || pw.length > 20 || pw.length < 4 || nick.length > 20) {
                     $errorBox.text("조건이 맞지 않아 해당 계정을 생성할 수 없습니다.");
                     $errorBox.removeClass('hidden');
                     return;
@@ -81,9 +81,9 @@
                 type: "POST",
                 url: "/api/signup",
                 data: {
-                    signupId: id,
-                    signupPw: pw,
-                    signupNick: nick,
+                    id_give: id,
+                    pw_give: pw,
+                    nick_give: nick,
                 },
                 success: function (response) {
                     if (response['result'] == 'success') {
