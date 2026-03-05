@@ -1,63 +1,61 @@
-from flask import Flask, render_template, jsonify, request
 import time, random
 from pymongo import MongoClient
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime
 from flask_apscheduler import APScheduler
 from jinja2 import Environment, FileSystemLoader
 import os
-from flask import Flask, render_template, request, jsonify, session, redirect
-from pymongo import MongoClient
+from flask import (
+    Flask, render_template, request, jsonify, redirect,
+    make_response, g
+)
 from pymongo.errors import DuplicateKeyError
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+import jwt
+import secrets
 
 
-app = Flask(__name__)
+ACCESS_EXP_MINUTE = 20
+REFRESH_EXP_DAYS = 1
+HEARTBEAT_GRACE_MINUTES = 5
 
-app.secret_key = os.environ.get("SECRET_KEY", "dev-only-secret")
-
-app.config.update(
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=False,
-    SESSION_PERMANENT=False
-)
-
+JWT_SECRET = os.environ.get("JWT_SECRET", "dev-only-secret")
+JWT_ALG = "HS256"
 
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+DB_NAME = os.environ.get("DB_NAME", "jungle")  # 하나로 통일
+
+class Config:
+    SCHEDULER_API_ENABLED = True
+
+app = Flask(__name__)
+app.config.from_object(Config())
+
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+db = client[DB_NAME]
 
-db = client.junglemergetest
-
+# collections
+# users: std_id unique
 db.user.create_index("std_id", unique=True)
 
-def fail(msg, code):
-    return jsonify({"result": "fail", "msg": msg}), code
+# sessions: user당 1개 세션만 유지
+db.sessions.create_index("user_id", unique=True)
+db.sessions.create_index("sid", unique=True)
 
-def ok(msg="success", data=None):
-    payload = {"result": "success", "msg": msg}
-    if data is not None:
-        payload["data"] = data
-    return jsonify(payload)
+# replies / quotes (필요하면 인덱스 추가)
+db.replies.create_index("std_id", unique=True)
 
-def login_required_page(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect('/login')
-        return f(*args, **kwargs)
-    return wrapper
+# =========================
+# Scheduler
+# =========================
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
 
-def login_required_api(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if 'user_id' not in session:
-            return fail("인증 필요", 401)
-        return f(*args, **kwargs)
-    return wrapper
+
 
 def timecal():
-    target_user = db.user.find_one({'std_id': session['user_id']}, {'_id':0})
+    target_user = db.user.find_one({'std_id': g.user_id}, {'_id':0})
     print(target_user)
     if target_user is None:
         return {'result': 'fail','message':'no user_end'}
@@ -95,7 +93,7 @@ def timecal():
     
 
     db.user.update_one(
-    {'std_id': session['user_id']}, 
+    {'std_id': g.user_id}, 
     {'$set': {
         'total_time': totaltime,
         'today_times':todaytimes,
@@ -106,73 +104,225 @@ def timecal():
                                  
     return {'result':'success', 'totaltime':totaltimeret,'thisSestime':thisSestime,'todaytimes':todaytimes}
 
-@app.route('/')
-@login_required_page
-def home():
-    quotes = list(db.quotes.find({}, {'_id': False}))
-    random_quote = random.choice(quotes)['text'] if quotes else "몰입의 즐거움!"
+def utcnow():
+    return datetime.utcnow()
 
-    returnleader=load_leaderboard("all")
-    
-    if returnleader['result'] == 'fail':
-        return render_template('index.html')
-    leaderboard = returnleader['leaderboard']
+# =========================
+# API helpers
+# =========================
+def fail(msg, code):
+    return jsonify({"result": "fail", "msg": msg}), code
 
-    me = returnleader['myleaderboard']
-    return render_template('index.html', quote=random_quote, ranking_list=leaderboard, my_rank=returnleader['myleader'], my_name=me['std_id'], my_total_time=me['total_time'])
+def ok(msg="success", data=None):
+    payload = {"result": "success", "msg": msg}
+    if data is not None:
+        payload["data"] = data
+    return jsonify(payload)
 
-@app.route('/result')
-def result():
-    endinfo=timecal()
-    if endinfo['result']=='fail':
-        thisSestime=db.user.find_one({'std_id': session['user_id']}, {'_id':0})['last_session']
-        if thisSestime == None:
-            thisSestime=0
-    else:
-        thisSestime=endinfo['thisSestime']
-    returnleader=load_leaderboard()
-    print("리턴 호출",endinfo,returnleader['result'])
-    if returnleader['result'] == 'fail':
-        return render_template('result.html')
-    
-    leaderboard = returnleader['leaderboard']
-    me = returnleader['myleaderboard']
+# =========================
+# JWT helpers (from 1st)
+# =========================
+def create_access_token(user_id: str, sid: str) -> str:
+    now = utcnow()
+    payload = {
+        "user_id": user_id,
+        "sid": sid,
+        "type": "access",
+        "exp": now + timedelta(minutes=ACCESS_EXP_MINUTE),
+        "iat": now,
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+
+def create_refresh_token(user_id: str, sid: str) -> str:
+    now = utcnow()
+    payload = {
+        "user_id": user_id,
+        "sid": sid,
+        "type": "refresh",
+        "exp": now + timedelta(days=REFRESH_EXP_DAYS),
+        "iat": now,
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+
+def verify_token(token: str):
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return None
+
+def issue_new_session(user_id: str):
+    sid = secrets.token_urlsafe(24)
+    now = utcnow()
+
+    db.sessions.update_one(
+        {"user_id": user_id},
+        {"$set": {"sid": sid, "last_seen": now}},
+        upsert=True
+    )
+
+    access = create_access_token(user_id, sid)
+    refresh = create_refresh_token(user_id, sid)
+    return sid, access, refresh
+
+def validate_session_or_fail(user_id: str, sid: str):
+    sess = db.sessions.find_one({"user_id": user_id})
+    if not sess:
+        return None, fail("세션 없음", 401)
+
+    if sess.get("sid") != sid:
+        return None, fail("다른 곳에서 로그인됨", 401)
+
+    last_seen = sess.get("last_seen")
+    if not last_seen:
+        return None, fail("세션 오류", 401)
+
+    if utcnow() - last_seen > timedelta(minutes=HEARTBEAT_GRACE_MINUTES):
+        db.sessions.delete_one({"user_id": user_id})
+        return None, fail("세션 만료", 401)
+
+    return sess, None
+
+# =========================
+# Decorators
+# =========================
+def login_required_page(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        token = request.cookies.get("access_token")
+        payload = verify_token(token) if token else None
+        if not payload or payload.get("type") != "access":
+            return redirect("/login")
+
+        user_id = payload.get("user_id")
+        sid = payload.get("sid")
+        if not user_id or not sid:
+            return redirect("/login")
+
+        _, err = validate_session_or_fail(user_id, sid)
+        if err:
+            resp = make_response(redirect("/login"))
+            resp.delete_cookie("access_token", path="/")
+            resp.delete_cookie("refresh_token", path="/api")
+            return resp
+
+        g.user_id = user_id
+        g.sid = sid
+        return f(*args, **kwargs)
+    return wrapper
+
+def login_required_api(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        token = request.cookies.get("access_token")
+        if not token:
+            return fail("인증 필요", 401)
+
+        payload = verify_token(token)
+        if not payload or payload.get("type") != "access":
+            return fail("토큰 만료/위조", 401)
+
+        user_id = payload.get("user_id")
+        sid = payload.get("sid")
+        if not user_id or not sid:
+            return fail("토큰 형식 오류", 401)
+
+        _, err = validate_session_or_fail(user_id, sid)
+        if err:
+            return err
+
+        g.user_id = user_id
+        g.sid = sid
+        return f(*args, **kwargs)
+    return wrapper
+
+# =========================
+# Night reset (4 AM) (from 2nd, adapted)
+# =========================
 
 
-    
-    return render_template('result.html',result='success',thisSestime=thisSestime,profile_inf=me,my_rank=returnleader['myleader'],ranking_list=leaderboard)
-
-
-@app.route('/login')
+@app.route("/login")
 def login_page():
-    return render_template('login.html')
+    return render_template("login.html")
 
-@app.route('/signup')
+@app.route("/signup")
 def signup_page():
-    return render_template('signup.html')
+    return render_template("signup.html")
 
-@app.route('/api/login', methods=['POST'])
+# =========================
+# Auth APIs (from 1st)
+# =========================
+@app.route("/api/login", methods=["POST"])
 def api_login():
-    user_id = request.form.get('id_give', '').strip()
-    user_pw = request.form.get('pw_give', '').strip()
+    user_id = request.form.get("id_give", "").strip()
+    user_pw = request.form.get("pw_give", "").strip()
 
     if not user_id or not user_pw:
-        return fail("필수값 누락", 400)
+        return fail("아이디/비밀번호를 입력해주세요", 400)
 
-    user = db.user.find_one({'std_id': user_id})
-
-    if (not user) or (not check_password_hash(user.get('password', ''), user_pw)):
+    user = db.user.find_one({"std_id": user_id})
+    if (not user) or (not check_password_hash(user.get("password", ""), user_pw)):
         return fail("아이디/비밀번호가 올바르지 않습니다", 401)
 
-    session.clear()
-    session['user_id'] = user['std_id']
-    return ok("로그인 성공")
+    _, access_token, refresh_token = issue_new_session(user["std_id"])
 
-@app.route('/api/signup', methods=['POST'])
+    resp = make_response(ok("로그인 성공"))
+    resp.set_cookie(
+        "access_token",
+        access_token,
+        httponly=True,
+        secure=False,      # 운영 HTTPS면 True
+        samesite="Lax",
+        max_age=ACCESS_EXP_MINUTE * 60,
+        path="/",
+    )
+    resp.set_cookie(
+        "refresh_token",
+        refresh_token,
+        httponly=True,
+        secure=False,      # 운영 HTTPS면 True
+        samesite="Lax",
+        max_age=REFRESH_EXP_DAYS * 24 * 60 * 60,
+        path="/api",
+    )
+    return resp
+
+@app.route("/api/refresh", methods=["POST"])
+def api_refresh():
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        return fail("리프레시 토큰 없음", 401)
+
+    payload = verify_token(refresh_token)
+    if not payload or payload.get("type") != "refresh":
+        return fail("리프레시 토큰 만료/위조", 401)
+
+    user_id = payload.get("user_id")
+    sid = payload.get("sid")
+    if not user_id or not sid:
+        return fail("리프레시 토큰 형식 오류", 401)
+
+    _, err = validate_session_or_fail(user_id, sid)
+    if err:
+        return err
+
+    new_access = create_access_token(user_id, sid)
+    resp = make_response(ok("토큰 갱신 성공"))
+    resp.set_cookie(
+        "access_token",
+        new_access,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=ACCESS_EXP_MINUTE * 60,
+        path="/",
+    )
+    return resp
+
+@app.route("/api/signup", methods=["POST"])
 def api_signup():
-    std_id = request.form.get('id_give', '').strip()
-    password = request.form.get('pw_give', '').strip()
-    nickname = request.form.get('nick_give', '').strip()
+    std_id = request.form.get("id_give", "").strip()
+    password = request.form.get("pw_give", "").strip()
+    nickname = request.form.get("nick_give", "").strip()
 
     if not std_id or not password or not nickname:
         return fail("필수값 누락", 400)
@@ -182,19 +332,18 @@ def api_signup():
     if len(nickname) > 20:
         return fail("닉네임은 20자 이하", 400)
 
+    # 2번째 코드와 호환되게 today_times 필드명 유지
     user = {
-        'std_id': std_id,
-        'nickname': nickname,
-        'password': generate_password_hash(password),
-        'start_time': None,
-        'total_time': 0,
-        'combo': None,
-        'todaytimes': [],
-        'friends': [],
-        'blockedUsers': []
+        "std_id": std_id,
+        "nickname": nickname,
+        "password": generate_password_hash(password),
+        "start_time": None,
+        "total_time": 0,
+        "todaytimes": [],
+        "friends": [],
+        "ban_id": [],  # 2번째 코드 ban_id를 사용하므로 통일
     }
 
-    # 이미 존재하는 std_id로 회원가입을 시도할 경우 DuplicateKeyError가 발생합니다.
     try:
         db.user.insert_one(user)
     except DuplicateKeyError:
@@ -202,11 +351,28 @@ def api_signup():
 
     return ok("회원가입 성공")
 
-# 로그아웃 API에서는 세션을 초기화하여 사용자를 로그아웃 처리합니다.
-@app.route('/logout')
+@app.route("/logout")
 def logout():
-    session.clear()
-    return redirect('/')
+    token = request.cookies.get("access_token")
+    payload = verify_token(token) if token else None
+    if payload and payload.get("type") == "access":
+        user_id = payload.get("user_id")
+        if user_id:
+            db.sessions.delete_one({"user_id": user_id})
+
+    resp = make_response(redirect("/login"))
+    resp.delete_cookie("access_token", path="/")
+    resp.delete_cookie("refresh_token", path="/api")
+    return resp
+
+@app.route("/api/heartbeat", methods=["POST"])
+@login_required_api
+def heartbeat():
+    db.sessions.update_one(
+        {"user_id": g.user_id, "sid": g.sid},
+        {"$set": {"last_seen": utcnow()}}
+    )
+    return ok("alive")
 
 
 
@@ -258,38 +424,54 @@ def am4cal(timestamp):
 def timetosec(hour,minute,second):
             return second+minute*60+hour*3600
 
-class Config:
-    SCHEDULER_API_ENABLED = True
+@app.route('/')
+@login_required_page
+def home():
+    quotes = list(db.quotes.find({}, {'_id': False}))
+    random_quote = random.choice(quotes)['text'] if quotes else "몰입의 즐거움!"
 
-## pre-settings
-file_loader = FileSystemLoader('C:/path/templates')
-env = Environment(loader=file_loader)
+    returnleader=load_leaderboard("all")
+    
+    if returnleader['result'] == 'fail':
+        return render_template('index.html')
+    leaderboard = returnleader['leaderboard']
+
+    me = returnleader['myleaderboard']
+    return render_template('index.html', quote=random_quote, ranking_list=leaderboard, my_rank=returnleader['myleader'], my_name=me['std_id'], my_total_time=me['total_time'])
+
+@app.route('/result')
+@login_required_page
+def result():
+    endinfo = timecal()
+    if endinfo['result'] == 'fail':
+        # DB에서 유저 정보를 가져옵니다.
+        user_info = db.user.find_one({'std_id': g.user_id}, {'_id':0})
+        
+        # KeyError 방지: ['last_session'] 대신 .get()을 사용하여 키가 없으면 0을 반환하게 합니다.
+        if user_info:
+            thisSestime = user_info.get('last_session', 0)
+        else:
+            thisSestime = 0
+            
+        if thisSestime == None:
+            thisSestime = 0
+    else:
+        thisSestime = endinfo['thisSestime']
+        
+    returnleader = load_leaderboard()
+    print("리턴 호출", endinfo, returnleader['result'])
+    
+    if returnleader['result'] == 'fail':
+        return render_template('result.html')
+    
+    leaderboard = returnleader['leaderboard']
+    me = returnleader['myleaderboard']
+    
+    return render_template('result.html', result='success', thisSestime=thisSestime, profile_inf=me, my_rank=returnleader['myleader'], ranking_list=leaderboard)
 
 
-
-app.secret_key = os.environ.get("SECRET_KEY", "dev-only-secret")
-
-app.config.update(
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=False,
-    SESSION_PERMANENT=False
-)
-app.config.from_object(Config())
-
-scheduler = APScheduler()
-scheduler.init_app(app)
-scheduler.start()
-
-
-
-
-
-# std_id 필드에 고유 인덱스를 생성하여 중복된 std_id가 저장되지 않도록 합니다.
-db.user.create_index("std_id", unique=True)
-## server-reset
-
-@scheduler.task('cron', hour='7',minute='42', id='reset')
+@scheduler.task('cron', hour='4',minute='0', id='reset')
+@login_required_api
 def reset():
     print("리셋 작동중!!!!")
 
@@ -300,15 +482,17 @@ def reset():
     
 ## main codes
 
-#현재 id(session['user_id'])의 현재 시간을 '년:월:일:시간:분:초'로 저장
+#현재 id(g.user_id)의 현재 시간을 '년:월:일:시간:분:초'로 저장
 #output='nowtime':현재 시간
 @app.route('/timerstart', methods=['POST'])
+@login_required_api
 def start_time():
     fmt='%Y:%m:%d:%H:%M:%S'
     nowtime= time.strftime(fmt)
     startTimestamp = datetime.strptime(nowtime, fmt)
     startTimestamp=am4cal(startTimestamp)
-    target_user = db.user.find_one({'std_id': session['user_id']}, {'_id':0})
+    print(g.user_id,"여기에 g")
+    target_user = db.user.find_one({'std_id': g.user_id}, {'_id':0})
     if target_user is None:
         return jsonify({'result': 'fail','message':'no user_start'})
     if 'today_times' not in target_user:
@@ -320,7 +504,7 @@ def start_time():
             return jsonify({'result': 'fail','message':'10초 후에 다시 시도해주세요!'})
         
     db.user.update_one(
-            {'std_id': session['user_id']},
+            {'std_id': g.user_id},
             {'$set': {'start_time': nowtime}}
         )
 
@@ -331,8 +515,8 @@ def start_time():
 #todaytimes 구조 {'start_time', 'end_time'}
 
 @app.route('/timerend', methods=['POST'])
+@login_required_api # 추가된 데코레이터
 def end_time():
-              
     return jsonify(timecal())
 
 #유저를 전부 읽어서 총 숫자를 내림차순으로 정렬 후 최대 30명까지 출력하는 함수
@@ -343,7 +527,7 @@ def end_time():
 
 def load_leaderboard(sortMode="all"):
     filterMode = sortMode
-    me = db.user.find_one({'std_id': session['user_id']}, {'_id':0})
+    me = db.user.find_one({'std_id': g.user_id}, {'_id':0})
     if me is None:
         return {'result':'fail','message':'나는 없는 유저 정보입니다!'}
     if filterMode == 'all':
@@ -353,7 +537,7 @@ def load_leaderboard(sortMode="all"):
 
     elif filterMode =='friends':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
-        friends=[session['user_id']]
+        friends=[g.user_id]
         friends+=me['friends']
         leaderboard=list(filter(lambda x: listfilter(x, friends),leaderboard))
         if 'ban_id' in me :
@@ -363,7 +547,7 @@ def load_leaderboard(sortMode="all"):
     else:
         return {'result': 'fail','message':'no current filter'}
     
-    myleader = db.user.find_one({'std_id':session['user_id']}, {'_id':0})
+    myleader = db.user.find_one({'std_id':g.user_id}, {'_id':0})
     myrank=1
     for i in leaderboard:
         if i == me:
@@ -381,9 +565,9 @@ def load_leaderboard(sortMode="all"):
 #replys구조 'id':해당 댓글 작성자 'reply':해당 댓글 내용
 @app.route('/profile', methods=['GET'])
 def profileshow():
-    profile = request.args.get('profile',session['user_id'])
+    profile = request.args.get('profile',g.user_id)
     if profile == '':
-        profile=session['user_id']
+        profile=g.user_id
     
     target_user = db.reply.find_one({'std_id': profile}, {'admin':0,'_id':0})
     target_user_profile = db.user.find_one({'std_id': profile}, {'_id':0})
@@ -397,7 +581,7 @@ def profileshow():
     else:
         return jsonify({'result':'success','profile_inf':target_user_profile,'replys':[]})
     
-    me = db.user.find_one({'std_id': session['user_id']}, {'_id':0})
+    me = db.user.find_one({'std_id': g.user_id}, {'_id':0})
     if 'ban_id' in me :
         replys=list(filter(lambda x: listfilter(x, me['ban_id'],"ban",str=""),replys))
 
@@ -408,7 +592,7 @@ def profileshow():
 @app.route('/memberlist', methods=['GET'])
 def load_memberlist():
     filterMode = request.args.get('sortMode')
-    me = db.user.find_one({'std_id': session['user_id']}, {'_id':0})
+    me = db.user.find_one({'std_id': g.user_id}, {'_id':0})
     if me is None:
         return jsonify({'result':'fail','message':'멤버 나는 없는 유저 정보입니다!'})
     
@@ -449,7 +633,7 @@ def banuser():
     if db.user.find_one({'std_id': ban_id}, {'_id':0}) is None:
         return jsonify({'result':'fail','message':'밴 없는 유저 정보입니다!'})    
         
-    db.user.update_one({'std_id': session['user_id']},{'$push': {'ban_id': ban_id}})
+    db.user.update_one({'std_id': g.user_id},{'$push': {'ban_id': ban_id}})
     return jsonify({'result':'success'})
     
 @app.route('/ban',methods=['DELETE'])
@@ -460,7 +644,7 @@ def unbanuser():
     if db.user.find_one({'std_id': ban_id}, {'_id':0}) is None:
         return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
         
-    db.user.update_one({'std_id': session['user_id']},{'$pull': {'ban_id': ban_id}})
+    db.user.update_one({'std_id': g.user_id},{'$pull': {'ban_id': ban_id}})
     return jsonify({'result':'success'})
     
 
@@ -487,11 +671,11 @@ def wirtereply():
             {'admin': 1},
             {'$set': {'counter': (countnum)}}
         )
-        db.reply.insert_one({'admin':0,'std_id': person,'replys':[{'id':session['user_id'],'reply':text,'reply_id':countnum}]})
+        db.reply.insert_one({'admin':0,'std_id': person,'replys':[{'id':g.user_id,'reply':text,'reply_id':countnum}]})
 
     else:
         replys=target_user['replys']
-        replys.append({'id':session['user_id'],'reply':text,'reply_id':countnum})
+        replys.append({'id':g.user_id,'reply':text,'reply_id':countnum})
         db.reply.update_one(
             {'std_id': person},
             {'$set': {'replys': replys}}
@@ -529,30 +713,7 @@ def randquote():
     return jsonify({'result': 'success', 'quote': retquote})
 
 
-def fail(msg, code):
-    return jsonify({"result": "fail", "msg": msg}), code
 
-def ok(msg="success", data=None):
-    payload = {"result": "success", "msg": msg}
-    if data is not None:
-        payload["data"] = data
-    return jsonify(payload)
-
-def login_required_page(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect('/login')
-        return f(*args, **kwargs)
-    return wrapper
-
-def login_required_api(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if 'user_id' not in session:
-            return fail("인증 필요", 401)
-        return f(*args, **kwargs)
-    return wrapper
 
 
 
@@ -560,85 +721,7 @@ def login_required_api(f):
 
 
 if __name__ == '__main__':
-    db.quotes.delete_many({})
-    quotess=[ {"text":"빨리 가려면 혼자 가고, 멀리 가려면 함께 가라. — 아프리카 속담"},
-              {"text":"혼자서 할 수 있는 일은 작지만, 함께 할 수 있는 일은 위대하다. — 헬렌 켈러"},
-             {"text": "모이는 것은 시작이고, 함께 머무는 것은 진보이며, 같이 일하는 것은 성공이다. — 헨리 포드"},
-             {"text": "교향곡을 혼자서 휘파람으로 불 수는 없다. 그것을 연주하려면 오케스트라가 필요하다. — H.E. 루콕"},
-            {"text":  "우리는 모두 한 날개로만 나는 천사들이다. 서로를 껴안아야만 날 수 있다. — 루치아노 데 크레센초"},
-            {"text":  "우정이란 누군가에게 ‘뭐라고? 너도 그래? 나만 그런 줄 알았는데!’라고 말하는 순간 태어난다. — C.S. 루이스"},
-           {"text":   "고난은 진정한 친구를 가려내는 시험대다. — 아리스토텔레스"},
-            {"text":  "진정한 친구는 세상 모두가 나갈 때 우리 안으로 들어오는 사람이다. — 월터 윈첼"},
-           {"text":   "누군가와 고통을 나누는 것은 그 고통을 반으로 줄이는 것이 아니라, 견딜 수 있는 힘을 두 배로 만드는 것이다. — 작자 미상 (유명 격언)"},
-           {"text":   "우리는 서로의 용기가 되어야 한다. — 마야 안젤루"},
-           {"text":   "천재성은 혼자서 빛날 수 있지만, 승리는 팀워크와 지성이 모여야 가능하다. — 마이클 조던"},
-           {"text":   "재능은 게임에서 이기게 하지만, 팀워크와 이해력은 챔피언을 만든다. — 마이클 조던"},
-          {"text":    "개미는 작지만 모이면 사자를 이긴다. — 에티오피아 속담"},
-           {"text":   "스스로 빛을 내는 별보다, 서로를 비추는 별들이 더 밝은 법이다."},
-           {"text":   "당신이 다른 사람의 배를 강 건너로 저어다 주면, 당신도 어느덧 강 건너에 도착해 있을 것이다. — 인도 속담"}]
 
-    db.quotes.insert_many(quotess)
-
-    # 기존 데이터 삭제 (테스트 환경 초기화)
-    db.user.delete_many({})
-    db.reply.delete_many({})
-
-    # 30명의 테스트 유저 생성
-    mock_users = []
-    for i in range(1, 31):
-        std_id2 = str(1000 + i) # 1001 ~ 1030
-        user = {
-            "std_id": std_id2,
-            "start_time": None,
-            "total_time": random.randint(500, 1000), # 500초~10000초 랜덤
-            "today_times": [],
-            "friends": [], 
-            "ban_id": []
-            
-            
-        }
-        
-        # 친구 관계 랜덤 설정 (일부 유저에게 친구 추가)
-        if i % 3 == 0:
-            user["friends"] = ["44"]
-        
-        mock_users.append(user)
-
-        # 1557번 유저 추가 (메인 테스트 계정)
-    mock_users.append({
-            "std_id": "44",
-            "start_time": None,
-            "total_time": 3600,
-            "today_times": [],
-            "friends": ["1003", "1006", "1009"],
-            "ban_id": [],
-            "nickname":"테스트닉네임"
-        })
-    reply_data = [
-        {
-            "admin": 0,
-            "std_id": "44", # 1557번 유저 프로필에 달린 댓글들
-            "replys": [
-                {"id": "1005", "reply": "1557님, 오늘 공부 정말 열심히 하시네요!", "reply_id": 1},
-                {"id": "1010", "reply": "대단해요! 저도 자극받고 갑니다.", "reply_id": 2}
-            ]
-        },
-        {
-            "admin": 0,
-            "std_id": "1005", # 1005번 유저 프로필에 달린 댓글들
-            "replys": [
-                {"id": "44", "reply": "맞팔해요! 1005님 화이팅!", "reply_id": 3}
-            ]
-        },
-        {
-            "admin": 1,
-            "counter": 4 # 다음 댓글 ID는 4부터 시작하도록 설정
-        }
-    ]
-    db.reply.insert_many(reply_data)
-
-    # 데이터 삽입
-    db.user.insert_many(mock_users)
 
     
     app.run('0.0.0.0', port=5001, debug=True)
