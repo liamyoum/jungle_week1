@@ -39,7 +39,7 @@
           <a href="#" class="hover:text-white">실시간 접속자</a>
           <a href="#" class="hover:text-white">친구</a>
           <a href="#" class="hover:text-white">마이페이지</a>
-          <button class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</button>
+          <a href="/logout" onclick="return confirm('정말 로그아웃 하시겠습니까? \n공부 시간 측정 중이라면 종료 버튼을 눌러주세요.')" class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</a>
         </div>
       </div>
     </nav>
@@ -47,11 +47,11 @@
     <div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-16">
 
       <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 p-8">
-        <div class="mb-6">
-          <h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
-          <p class="text-3xl font-black text-green-700">시작 버튼 누를 때 시간 or {{ start_time }}</p>
-          <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
-          <p class="text-3xl font-black text-green-700">start_time부터 스탑워치처럼 브라우저에서 작동?</p> 
+        <div id="start-time-display" class="mb-6">
+					
+					<p class="text-3xl font-black text-green-700">시작을 눌러 정글에서의 진짜 몰입 시간을 측정해보세요.</p>
+          <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">정글 리더보드에 자신의 이름을 정상에 올려보세요.</h2>
+
         </div>
         
         <div class="flex justify-between pt-6 border-t border-gray-50">
@@ -113,18 +113,43 @@
 			});
 
       function startSession() {
-				
+				alert('시작 버튼 정상 작동')
+
 				$.ajax({
 					type: 'POST',
-					url: '/api/start',
-					success
-				})
+					url: '/timerstart',
+					data: {},
+					success: function (response) {
+						if (response['result'] == 'success') {
+							// 1. 서버가 제공하는 현재 시각 변수에 저장
+							const serverStartTime = response['nowtime'];
+
+							timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
+        <p class="text-3xl font-black text-green-700">${serverStartTime}</p>
+        <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
+        <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>` 
+
+							// 2. timehtml 갈아 끼우기
+							$('#start-time-display').html(timehtml);
+
+							// 3. 이제 00:00:00부터 올라가는 스탑워치를 실행합니다.
+							startStopwatch(startTime);
+
+						}
+					}
+				});
+			}
+
+			function startStopwatch(startTimeStr) {
+				console.log(startTimeStr);
+
+				const time_array = startTimeStr.split(':');
+				const startTime = new
 			}
 
       function pauseSession() {}
 
       function endSession() {
-				sessionStorage.removeItem('mytoken');
 			}
 		</script>
 	</body>
