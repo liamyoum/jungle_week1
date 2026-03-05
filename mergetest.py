@@ -17,7 +17,7 @@ import secrets
 
 ACCESS_EXP_MINUTE = 20
 REFRESH_EXP_DAYS = 1
-HEARTBEAT_GRACE_MINUTES = 5
+HEARTBEAT_GRACE_MINUTES = 10
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-only-secret")
 JWT_ALG = "HS256"
@@ -184,7 +184,9 @@ def validate_session_or_fail(user_id: str, sid: str):
     if not last_seen:
         return None, fail("세션 오류", 401)
 
-    if utcnow() - last_seen > timedelta(minutes=HEARTBEAT_GRACE_MINUTES):
+    # 하트비트가 끊겨 세션이 만료된 경우
+    if utcnow() - last_seen > timedelta(seconds=HEARTBEAT_GRACE_MINUTES):
+        force_timer_end(user_id) 
         db.sessions.delete_one({"user_id": user_id})
         return None, fail("세션 만료", 401)
 
@@ -360,15 +362,72 @@ def api_signup():
 
     return ok("회원가입 성공")
 
+def force_timer_end(user_id):
+    """강제 로그아웃 시 진행 중이던 타이머를 정산하는 함수"""
+    target_user = db.user.find_one({'std_id': user_id})
+    if not target_user or not target_user.get('start_time'):
+        return # 유저가 없거나 측정 중이 아니면 패스
+
+    starttime = target_user['start_time']
+    totaltime = target_user.get('total_time', 0)
+    todaytimes = target_user.get('todaytimes', [])
+
+    fmt = '%Y:%m:%d:%H:%M:%S'
+    nowtime = time.strftime(fmt)
+    
+    try:
+        startTimestamp = datetime.strptime(starttime, fmt)
+        endTimestamp = datetime.strptime(nowtime, fmt)
+    except ValueError:
+        db.user.update_one({'std_id': user_id}, {'$set': {'start_time': None}})
+        return
+
+    thisSestime = endTimestamp - startTimestamp
+    thisSestimesec = int(thisSestime.total_seconds())
+
+    # 3초 미만이면 그냥 취소 처리
+    if thisSestimesec < 3:
+        db.user.update_one({'std_id': user_id}, {'$set': {'start_time': None}})
+        return
+
+    totaltime += thisSestimesec
+    start_am4 = am4cal(startTimestamp)
+    end_am4 = am4cal(endTimestamp)
+    thisSestime_format = sectoformat(thisSestimesec)
+
+    todaytimes.append({'start_time': str(start_am4), 'end_time': str(end_am4)})
+
+    db.user.update_one(
+        {'std_id': user_id}, 
+        {'$set': {
+            'total_time': totaltime,
+            'todaytimes': todaytimes,
+            'start_time': None,
+            'last_session': thisSestime_format
+        }}      
+    )
+
 @app.route("/logout")
 def logout():
-    token = request.cookies.get("access_token")
-    payload = verify_token(token) if token else None
-    if payload and payload.get("type") == "access":
-        user_id = payload.get("user_id")
-        if user_id:
-            db.sessions.delete_one({"user_id": user_id})
-    print("로그아웃 작동")
+    # access_token이 지워졌을 때를 대비해 refresh_token도 확인
+    token = request.cookies.get("access_token") or request.cookies.get("refresh_token")
+    user_id = None
+    
+    if token:
+        try:
+            # 토큰이 만료되었더라도 유저 정보를 강제로 읽어옵니다.
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG], options={"verify_exp": False})
+            user_id = payload.get("user_id")
+        except:
+            pass
+
+    if user_id:
+        # 1. 세션 삭제 전, 측정 중이던 시간 안전하게 정산!
+        force_timer_end(user_id)
+        # 2. DB 세션 삭제
+        db.sessions.delete_one({"user_id": user_id})
+        
+    print(f"로그아웃 작동 및 시간 정산 완료: {user_id}")
 
     resp = make_response(redirect("/login"))
     resp.delete_cookie("access_token", path="/")
