@@ -11,7 +11,7 @@ from functools import wraps
 # Config
 ACCESS_EXP_MINUTE = 20
 REFRESH_EXP_DAYS = 1
-HEARTBEAT_GRACE_MINUTES = 5
+HEARTBEAT_GRACE_MINUTES = 2
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-only-secret")
 JWT_ALG = "HS256"
@@ -75,10 +75,6 @@ def ok(msg="success", data=None):
 
 # Session helpers
 def issue_new_session(user_id: str, tab_id: str):
-    """
-    - 사용자당 세션 1개만 유지 (다른 기기 로그인 => 기존 강제 종료)
-    - 탭 1개만 허용: tab_id가 다르면 기존 세션 강제 종료
-    """
     sid = secrets.token_urlsafe(24)
     now = utcnow()
 
@@ -95,7 +91,7 @@ def issue_new_session(user_id: str, tab_id: str):
 
 def get_request_tab_id():
     # 프론트가 모든 API 호출에 이 헤더를 같이 보내야 "탭 1개만" 강제 가능
-    return request.headers.get("X-Tab-Id") or ""
+    return request.headers.get("X-Tab-Id") or request.cookies.get("tab_id") or ""
 
 def validate_session_or_fail(user_id: str, sid: str, tab_id: str):
     sess = db.sessions.find_one({"user_id": user_id})
@@ -133,8 +129,20 @@ def login_required_page(f):
 
         user_id = payload.get("user_id")
         sid = payload.get("sid")
-        tab_id = get_request_tab_id()  # 페이지 요청에도 헤더를 붙이기 어렵기 때문에, 페이지는 access만 확인
-        # 페이지는 최소 체크만 하고, 실제 API에서 세션/탭/하트비트 강제
+        tab_id = get_request_tab_id()
+
+        if not user_id or not sid:
+            return redirect('/login')
+
+        _, err = validate_session_or_fail(user_id, sid, tab_id)
+        if err:
+            # 세션이 만료/탭불일치면 쿠키도 지우고 로그인으로
+            resp = make_response(redirect('/login'))
+            resp.delete_cookie("access_token", path="/")
+            resp.delete_cookie("refresh_token", path="/api")
+            resp.delete_cookie("tab_id", path="/")
+            return resp
+
         g.user_id = user_id
         g.sid = sid
         g.tab_id = tab_id
@@ -223,6 +231,16 @@ def api_login():
         path="/api"        # refresh는 API에만
     )
 
+    resp.set_cookie(
+        "tab_id",
+        tab_id,
+        httponly=False,  # 필요에 따라 True/False
+        secure=False,
+        samesite="Lax",
+        max_age=REFRESH_EXP_DAYS * 24 * 60 * 60,
+        path="/"
+    )
+
     return resp
 
 @app.route('/api/refresh', methods=['POST'])
@@ -307,6 +325,7 @@ def logout():
     resp = make_response(redirect('/login'))
     resp.delete_cookie("access_token", path="/")
     resp.delete_cookie("refresh_token", path="/api")
+    resp.delete_cookie("tab_id", path="/")
     return resp
 
 # Heartbeat API (5분 grace)
