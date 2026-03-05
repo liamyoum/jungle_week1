@@ -49,7 +49,6 @@
 					<span class="text-sm font-bold text-gray-500"
 						>오늘의 진행상태</span
 					>
-					<span class="text-2xl font-black text-green-600">75%</span>
 				</div>
 				<div
 					class="w-full h-4 bg-gray-200 rounded-full overflow-hidden"
@@ -73,7 +72,7 @@
 						id="total-time"
 						class="text-2xl font-black text-gray-800"
 					>
-						128시간 30분
+						"{{ profile_inf.totaltime }}"
 					</p>
 				</div>
 				<div
@@ -86,7 +85,7 @@
 						id="streak-days"
 						class="text-2xl font-black text-gray-800"
 					>
-						15일째
+						"{{ profile_inf.combo }}"
 					</p>
 				</div>
 			</div>
