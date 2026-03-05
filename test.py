@@ -129,7 +129,6 @@ def start_time():
     nowtime= time.strftime('%Y:%m:%d:%H:%M:%S')
     target_user = db.user.find_one({'std_id': testid}, {'_id':0})
 
-
     if target_user is None:
         return jsonify({'result': 'fail','message':'no user'})
 
@@ -141,7 +140,6 @@ def start_time():
         )
 
     return jsonify({'result': 'success','nowtime':nowtime})
-
 
 #현재 id의 진행되고 있는 시간 측정을 끝내는 함수
 #output='totaltime':총 시간 초,'thisSestime':이번 세션 초,'todaytimes':총 시간
