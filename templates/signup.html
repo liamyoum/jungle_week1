@@ -1,101 +1,111 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <!-- Required meta tags -->
-		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, shrink-to-fit=no"
-		/>
-		<!-- Tailwind -->
-		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-		<!-- Jquery -->
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-		<!-- 구글폰트 -->
-		<link
-			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
-			rel="stylesheet"
-		/>
+{% extends "base.html" %} {% block content %}
+<div class="flex min-h-screen">
+	<div
+		class="flex w-full items-center justify-center bg-white px-8 lg:w-1/2"
+	>
+		<div class="w-full max-2-md">
+			<h2 class="mb-10 text-4xl font-extrabold text-[#2D4B1F]">
+				Sign up
+			</h2>
 
-<title> 회원가입 </title>
+			<div class="space-y-6">
+				<div>
+					<label class="mb-2 block font-bold text-[#2D4B1F]"
+						>Student ID</label
+					>
+					<input
+						type="text"
+						id="id_give"
+						placeholder="두 자리 숫자로 입력해주세요 ex: 17"
+						class="w-full bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"
+					/>
+				</div>
+				<div>
+					<label class="mb-2 block font-bold text-[#2D4B1F]"
+						>Password</label
+					>
+					<input
+						type="password"
+						id="pw_give"
+						placeholder="최대 20자리"
+						class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"
+					/>
+				</div>
+				<div>
+					<label class="mb-2 block font-bold text-[#2D4B1F]"
+						>Nickname</label
+					>
+					<input
+						type="text"
+						id="nick_give"
+						placeholder="최대 20자리"
+						class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"
+					/>
+				</div>
+				<div
+					id="error-msg"
+					class="text-red-500 text-xs mt-2 hidden text-center"
+				>
+					<!-- 회원가입 조건 불충족 시 -->
+				</div>
+				<button
+					onclick="signUp()"
+					class="mt-4 w-full bg-green-500/80 p-5 text-lg font-bold text-white transition-hover hover:bg-green-300/80"
+				>
+					회원가입
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	function signUp() {
+		const id = $('#id_give').val();
+		const pw = $('#pw_give').val();
+		const nick = $('#nick_give').val();
 
-    <style>
-        .jungle-bg {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('../img/jungle.jpg');
-            background-size: cover;
-            background-position: center;
-        }
-    </style>
+		const idPattern = /^\d{2}$/; // 무조건 숫자 두 자리, 사용자 수 많아져서 확장하려면 수정 필요
 
-    <body class="jungle-bg h-screen w-screen">
-        <div class="flex min-h-screen">
-            <div class="flex w-full items-center justify-center bg-white px-8 lg:w-1/2">
-                <div class="w-full max-2-md">
-                    <h2 class="mb-10 text-4xl font-extrabold text-[#2D4B1F]">Sign up</h2>
+		let $errorBox = $('#error-msg');
+		$errorBox.addClass('hidden');
 
-                    <div class="space-y-6">
-                        <div>
-                            <label class="mb-2 block font-bold text-[#2D4B1F]">Student ID</label>
-                            <input type="text" id="id_give" placeholder="두 자리 숫자로 입력해주세요 ex: 17" class="w-full bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
-                        </div>
-                        <div>
-                            <label class="mb-2 block font-bold text-[#2D4B1F]">Password</label>
-                            <input type="password" id="pw_give" placeholder="최대 20자리" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
-                        </div>
-                        <div>
-                            <label class="mb-2 block font-bold text-[#2D4B1F]">Nickname</label>
-                            <input type="text" id="nick_give" placeholder="최대 20자리" class="w-full border-none bg-[#F8F9FF] p-5 outline-none placeholder:text-gray-300"/>
-                        </div>
-                        <div id="error-msg" class="text-red-500 text-xs mt-2 hidden text-center">
-                            <!-- 회원가입 조건 불충족 시 -->
-                        </div>
-                        <button onclick="signUp()" class="mt-4 w-full bg-green-500/80 p-5 text-lg font-bold text-white transition-hover hover:bg-green-300/80">회원가입</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <script>
-			function signUp() {
-                const id = $('#id_give').val();
-                const pw = $('#pw_give').val();
-                const nick = $('#nick_give').val();
+		if (id == '' || pw == '' || nick == '') {
+			$errorBox.text('모두 입력해주세요.');
+			$errorBox.removeClass('hidden'); // 숨김 해제
+			return;
+		} else if (
+			!idPattern.test(id) ||
+			pw.length > 20 ||
+			pw.length < 4 ||
+			nick.length > 20
+		) {
+			$errorBox.text(
+				'조건이 맞지 않아 해당 계정을 생성할 수 없습니다.'
+			);
+			$errorBox.removeClass('hidden');
+			return;
+		}
 
-                const idPattern = /^\d{2}$/; // 무조건 숫자 두 자리, 사용자 수 많아져서 확장하려면 수정 필요
-
-                let $errorBox = $('#error-msg');
-                $errorBox.addClass("hidden");
-
-                if (id == '' || pw == '' || nick == '') {
-                    $errorBox.text("모두 입력해주세요.");
-                    $errorBox.removeClass('hidden'); // 숨김 해제
-                    return;
-                }
-
-                else if (!idPattern.test(id) || pw.length > 20 || pw.length < 4 || nick.length > 20) {
-                    $errorBox.text("조건이 맞지 않아 해당 계정을 생성할 수 없습니다.");
-                    $errorBox.removeClass('hidden');
-                    return;
-                }
-
-                $.ajax({
-                type: "POST",
-                url: "/api/signup",
-                data: {
-                    id_give: id,
-                    pw_give: pw,
-                    nick_give: nick,
-                },
-                success: function (response) {
-                    if (response['result'] == 'success') {
-                    alert('회원가입 성공');
-                    window.location.href = '/login'; // login.html로 이동
-                } else {
-                    $errorBox.text("회원가입에 실패하였습니다. 다시 시도해주세요"); // 중복일 때 메시지 다르게 해야하나?
-                    $errorBox.removeClass("hidden");
-                }
-                }
-            });
-            }
-        </script>
-    </body>
-</html>
+		$.ajax({
+			type: 'POST',
+			url: '/api/signup',
+			data: {
+				id_give: id,
+				pw_give: pw,
+				nick_give: nick
+			},
+			success: function (response) {
+				if (response['result'] == 'success') {
+					alert('회원가입 성공');
+					window.location.href = '/login'; // login.html로 이동
+				} else {
+					$errorBox.text(
+						'회원가입에 실패하였습니다. 다시 시도해주세요'
+					); // 중복일 때 메시지 다르게 해야하나?
+					$errorBox.removeClass('hidden');
+				}
+			}
+		});
+	}
+</script>
+{% endblock %}

@@ -1,115 +1,133 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <!-- Required meta tags -->
-		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, shrink-to-fit=no"
-		/>
-		<!-- Tailwind -->
-		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-		<!-- Jquery -->
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-		<!-- 구글폰트 -->
-		<link
-			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
-			rel="stylesheet"
-		/>
-    <title>정품타</title>
+{% extends "base.html" %} {% block content %}
+<nav
+	class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all"
+>
+	<div
+		class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center"
+	>
+		<div
+			class="font-bold text-3xl text-white tracking-tighter cursor-pointer"
+		>
+			정품타
+		</div>
 
-    <style>
-      .jungle-bg {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-                              url("{{ url_for('static', filename='img/jungle.jpg') }}");
-            background-size: cover;
-            background-position: center;
-      }
-    </style>
+		<div
+			class="flex gap-6 text-white/80 font-medium text-md items-center"
+		>
+			<a href="#" class="hover:text-white">리더보드</a>
+			<a href="#" class="hover:text-white">실시간 접속자</a>
+			<a href="#" class="hover:text-white">친구</a>
+			<a href="#" class="hover:text-white">마이페이지</a>
+			<a
+				href="/logout"
+				onclick="
+					return confirm(
+						'정말 로그아웃 하시겠습니까? \n공부 시간 측정 중이라면 종료 버튼을 눌러주세요.'
+					);
+				"
+				class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition"
+				>로그아웃</a
+			>
+		</div>
+	</div>
+</nav>
+<div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-16">
+	<section
+		class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 p-8"
+	>
+		<div id="start-time-display" class="mb-6">
+			<p class="text-3xl font-black text-green-700">
+				시작을 눌러 정글에서의 진짜 몰입 시간을 측정해보세요.
+			</p>
+			<h2
+				class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1"
+			>
+				정글 리더보드에 자신의 이름을 정상에 올려보세요.
+			</h2>
+		</div>
 
-	<body class="jungle-bg bg-cover bg-fixed min-h-screen flex justify-center">
-		<nav class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all">
-      <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-        <div class="font-bold text-3xl text-white tracking-tighter cursor-pointer">
-          정품타
-        </div>
+		<div
+			id="btn-container"
+			class="flex justify-center pt-6 border-t border-gray-50"
+		>
+			<button
+				id="start-btn"
+				onclick="startSession()"
+				class="w-2/5 shadow-sm border border-blue-300 bg-blue-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-blue-500/30 transition"
+			>
+				시작
+			</button>
+			<button
+				id="pause-btn"
+				onclick="pauseSession()"
+				class="hidden w-2/5 shadow-sm border border-green-300 bg-green-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-green-500/30 transition"
+			>
+				휴식
+			</button>
+			<button
+				id="end-btn"
+				onclick="endSession()"
+				class="hidden w-2/5 shadow-sm border border-red-300 bg-red-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-red-500/30 transition"
+			>
+				종료
+			</button>
+		</div>
+		<p
+			class="text-xl text-center text-gray-600 pt-4 italic font-medium"
+		>
+			"{{ quote }}"
+		</p>
+	</section>
 
-        <div class="flex gap-6 text-white/80 font-medium text-md items-center">
-          <a href="#" class="hover:text-white">리더보드</a>
-          <a href="#" class="hover:text-white">실시간 접속자</a>
-          <a href="#" class="hover:text-white">친구</a>
-          <a href="#" class="hover:text-white">마이페이지</a>
-          <a href="/logout" onclick="return confirm('정말 로그아웃 하시겠습니까? \n공부 시간 측정 중이라면 종료 버튼을 눌러주세요.')" class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</a>
-        </div>
-      </div>
-    </nav>
+	<section
+		class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col"
+	>
+		<div class="p-6 border-b border-gray-100">
+			<h2 class="text-xl font-bold text-gray-800">
+				정글 리더보드 (TOP 30)
+			</h2>
+		</div>
 
-    <div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-16">
+		<div class="overflow-y-auto h-96 custom-scrollbar mb-8">
+			<table class="w-full text-left">
+				<thead class="sticky top-0 bg-gray-50 text-gray-500 text-xs">
+					<tr>
+						<th class="px-6 py-3">순위</th>
+						<th class="px-6 py-3">이름</th>
+						<th class="px-6 py-3">번호</th>
+						<th class="px-6 py-3">총 누적시간</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-gray-50">
+					{% for user in ranking_list %}
+					<tr class="hover:bg-green-50/30 transition">
+						<td class="px-6 py-4 font-bold text-gray-400">
+							{{ loop.index }}위
+						</td>
+						<td class="px-6 py-4 font-semibold text-gray-800">
+							{{ user.nickname }}
+						</td>
+						<td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
+						<td class="px-6 py-4 font-mono text-green-600">
+							{{ user.total_time }}
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
 
-      <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 p-8">
-        <div id="start-time-display" class="mb-6">
-					
-					<p class="text-3xl font-black text-green-700">시작을 눌러 정글에서의 진짜 몰입 시간을 측정해보세요.</p>
-          <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">정글 리더보드에 자신의 이름을 정상에 올려보세요.</h2>
-
-        </div>
-        
-        <div id="btn-container" class="flex justify-center pt-6 border-t border-gray-50">
-          <button id="start-btn" onclick="startSession()"
-          class="w-2/5 shadow-sm border border-blue-300 bg-blue-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-blue-500/30 transition">시작</button>
-          <button id="pause-btn" onclick="pauseSession()"
-          class="hidden w-2/5 shadow-sm border border-green-300 bg-green-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-green-500/30 transition">휴식</button>
-          <button id="end-btn" onclick="endSession()"
-          class="hidden w-2/5 shadow-sm border border-red-300 bg-red-500/80 font-semibold px-4 py-1.5 rounded-full cursor-pointer hover:bg-red-500/30 transition">종료</button>
-        </div>
-        <p class="text-xl text-center text-gray-600 pt-4 italic font-medium">
-            "{{ quote }}"
-        </p>
-      </section>
-      
-      <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-        <div class="p-6 border-b border-gray-100">
-          <h2 class="text-xl font-bold text-gray-800">정글 리더보드 (TOP 30)</h2>
-        </div>
-
-        <div class="overflow-y-auto h-96 custom-scrollbar mb-8">
-          <table class="w-full text-left">
-            <thead class="sticky top-0 bg-gray-50 text-gray-500 text-xs">
-              <tr>
-                <th class="px-6 py-3">순위</th>
-                <th class="px-6 py-3">이름</th>
-                <th class="px-6 py-3">번호</th>
-                <th class="px-6 py-3">총 누적시간</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-50">
-              {% for user in ranking_list %}
-              <tr class="hover:bg-green-50/30 transition">
-                <td class="px-6 py-4 font-bold text-gray-400">{{ loop.index }}위</td>
-                <td class="px-6 py-4 font-semibold text-gray-800">{{ user.name }}</td>
-                <td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
-                <td class="px-6 py-4 font-mono text-green-600">{{ user.total_time }}</td>
-              </tr>
-              <tr class="hover:bg-green-50/30 transition">
-                <td class="px-6 py-4 font-bold text-gray-400">{{ loop.index }}위</td>
-                <td class="px-6 py-4 font-semibold text-gray-800">{{ user.name }}</td>
-                <td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
-                <td class="px-6 py-4 font-mono text-green-600">{{ user.total_time }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="bg-green-600 p-4 text-white flex justify-between items-center shadow-inner">
-          <span class="font-bold">내 순위</span>
-          <div class="flex gap-4 items-center">
-            <span class="text-2xl font-black">{{ my_rank }}위</span>
-            <span class="text-sm opacity-80">{{ my_name }} ({{ my_total_time }})</span>
-          </div>
-        </div>
-      </section>
-    </div>
-		<script src="{{ url_for('static', filename='js/main.js') }}"></script>
-	</body>
-</html>
+		<div
+			class="bg-green-600 p-4 text-white flex justify-between items-center shadow-inner"
+		>
+			<span class="font-bold">내 순위</span>
+			<div class="flex gap-4 items-center">
+				<span class="text-2xl font-black">{{ my_rank }}위</span>
+				<span class="text-sm opacity-80"
+					>{{ my_name }} ({{ my_total_time }})</span
+				>
+			</div>
+		</div>
+	</section>
+</div>
+{% endblock %}
