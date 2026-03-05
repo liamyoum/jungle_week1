@@ -176,10 +176,6 @@ function endSession() {
 		alert('수고하셨습니다! 결과 페이지로 이동합니다.');
 		window.location.href = '/result';
 	} else {
-
-
-						window.location.href = '/result';
-
-		
+		window.location.href = '/result';
 	}
 }

@@ -121,9 +121,15 @@ def home():
     me = returnleader['myleaderboard']
     return render_template('index.html', quote=random_quote, ranking_list=leaderboard, my_rank=returnleader['myleader'], my_name=me['std_id'], my_total_time=me['total_time'])
 
-@app.route('/result', methods=['POST'])
+@app.route('/result')
 def result():
     endinfo=timecal()
+    if endinfo['result']=='fail':
+        thisSestime=db.user.find_one({'std_id': session['user_id']}, {'_id':0})['last_session']
+        if thisSestime == None:
+            thisSestime=0
+    else:
+        thisSestime=endinfo['thisSestime']
     returnleader=load_leaderboard()
     print("리턴 호출",endinfo,returnleader['result'])
     if returnleader['result'] == 'fail':
@@ -134,7 +140,7 @@ def result():
 
 
     
-    return render_template('result.html',result='success',thisSestime=endinfo['thisSestime'],profile_inf=me,my_rank=returnleader['myleader'],ranking_list=leaderboard)
+    return render_template('result.html',result='success',thisSestime=thisSestime,profile_inf=me,my_rank=returnleader['myleader'],ranking_list=leaderboard)
 
 
 @app.route('/login')

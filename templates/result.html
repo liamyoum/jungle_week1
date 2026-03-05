@@ -52,7 +52,7 @@
 					지금까지 총 공부한 시간은?
 				</h2>
 				<p class="text-5xl font-black text-green-700">
-					"{{ profile_inf.totaltime }}"
+					"{{ profile_inf.total_time }} 초"
 				</p>
 			</div>
 		</div>
@@ -84,18 +84,6 @@
 							{{ loop.index }}위
 						</td>
 						<td class="px-6 py-4 font-semibold text-gray-800">
-							{{ user.name }}
-						</td>
-						<td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
-						<td class="px-6 py-4 font-mono text-green-600">
-							{{ user.total_time }}
-						</td>
-					</tr>
-					<tr class="hover:bg-green-50/30 transition">
-						<td class="px-6 py-4 font-bold text-gray-400">
-							{{ loop.index }}위
-						</td>
-						<td class="px-6 py-4 font-semibold text-gray-800">
 							{{ user.std_id }}
 						</td>
 						<td class="px-6 py-4 text-gray-500">{{ user.std_id }}</td>
@@ -115,7 +103,7 @@
 			<div class="flex gap-4 items-center">
 				<span class="text-2xl font-black">{{ my_rank }}위</span>
 				<span class="text-sm opacity-80"
-					>{{ profile_inf.nickname }} ({{ profile_inf.totaltime }})</span
+					>{{ my_name }} ({{ my_total_time }})</span
 				>
 			</div>
 		</div>
