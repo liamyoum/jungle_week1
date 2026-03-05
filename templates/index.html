@@ -105,9 +105,9 @@
 							{{ loop.index }}위
 						</td>
 						<td class="px-6 py-4 font-semibold text-gray-800">
-							{{ user.nickname }}
+							{{ user.std_id }}
 						</td>
-						<td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
+						<td class="px-6 py-4 text-gray-500">{{ user.std_id }}</td>
 						<td class="px-6 py-4 font-mono text-green-600">
 							{{ user.total_time }}
 						</td>
@@ -130,14 +130,4 @@
 		</div>
 	</section>
 </div>
-<script>
-  setInterval(()=>{
-    fetch("/api/heartbeat",{
-      method:"POST",
-      headers:{
-        "X-Tab-Id": sessionStorage.getItem("tab_id")
-      }
-    })
-  },60000)
-</script>
 {% endblock %}
