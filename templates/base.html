@@ -1,8 +1,6 @@
-<!-- For Tailwind CDN connection, Google Font, all the headers, colors, etc. -->
 <!doctype html>
 <html lang="ko">
 	<head>
-		<!-- Required meta tags -->
 		<meta charset="utf-8" />
 		<meta
 			name="viewport"
@@ -17,9 +15,23 @@
 			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
 			rel="stylesheet"
 		/>
-		{% block head %}{% endblock %}
+		<title>정품타</title>
+
+		<style>
+			.jungle-bg {
+				background-image:
+					linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+					url("{{ url_for('static', filename='img/jungle.jpg') }}");
+				background-size: cover;
+				background-position: center;
+			}
+		</style>
 	</head>
-	<body class="bg-gray-100">
+	<body
+		class="jungle-bg bg-cover bg-fixed min-h-screen flex justify-center"
+	>
 		{% block content %}{% endblock %}
+
+		<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 	</body>
 </html>

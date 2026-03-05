@@ -1,108 +1,95 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <!-- Required meta tags -->
-		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, shrink-to-fit=no"
-		/>
-		<!-- Tailwind -->
-		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-		<!-- Jquery -->
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-		<!-- 구글폰트 -->
-		<link
-			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
-			rel="stylesheet"
-		/>
-    <title>정품타 | 로그인</title>
+{% extends "base.html" %} {% block content %}
+<div
+	class="bg-white/80 backdrop-blur-md p-10 rounded-2xl shadow-2xl w-full max-w-sm border border-white/20"
+>
+	<div class="text-center mb-10">
+		<h1 class="text-3xl font-black text-green-900 mb-2">정품타</h1>
+		<p class="text-green-700 font-medium">선의의 경쟁을 하세요</p>
+	</div>
 
-    <style>
-      .jungle-bg {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-                              url('../img/jungle.jpg');
-            background-size: cover;
-            background-position: center;
-      }
-    </style>
+	<div class="space-y-6">
+		<div>
+			<input
+				type="text"
+				id="loginId"
+				placeholder="아이디"
+				class="w-full px-5 py-3 rounded-xl border-none bg-white/50 focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder:text-gray-500"
+			/>
+		</div>
 
-	<body class="jungle-bg h-screen flex items-center justify-center">
+		<div>
+			<input
+				type="password"
+				id="loginPw"
+				placeholder="비밀번호"
+				class="w-full px-5 py-3 rounded-xl border-none bg-white/50 focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder:text-gray-500"
+			/>
+		</div>
 
-    <div class="bg-white/80 backdrop-blur-md p-10 rounded-2xl shadow-2xl w-full max-w-sm border border-white/20">
-        <div class="text-center mb-10">
-            <h1 class="text-3xl font-black text-green-900 mb-2">정품타</h1>
-            <p class="text-green-700 font-medium">선의의 경쟁을 하세요</p>
-        </div>
+		<div
+			id="error-msg"
+			class="text-red-500 text-xs mt-2 hidden text-center"
+		>
+			계정 정보가 올바르지 않습니다.
+		</div>
 
-        <div class="space-y-6">
-            <div>
-                <input type="text" id="loginId" placeholder="아이디" 
-                    class="w-full px-5 py-3 rounded-xl border-none bg-white/50 focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder:text-gray-500">
-            </div>
+		<button
+			onclick="login()"
+			class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200"
+		>
+			정품타 입장하기
+		</button>
+	</div>
 
-            <div>
-                <input type="password" id="loginPw" placeholder="비밀번호" 
-                    class="w-full px-5 py-3 rounded-xl border-none bg-white/50 focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder:text-gray-500">
-            </div>
+	<div class="mt-8 text-center text-sm text-gray-700">
+		계정이 없으신가요?
+		<a href="/signup" class="text-green-800 font-bold hover:underline"
+			>회원가입</a
+		>
+	</div>
+</div>
 
-            <div id="error-msg" class="text-red-500 text-xs mt-2 hidden text-center">
-              계정 정보가 올바르지 않습니다.
-            </div>
+<script>
+	function login() {
+		const id = $('#loginId').val();
+		const pw = $('#loginPw').val();
+		let $errorBox = $('#error-msg');
 
-            <button onclick="login()" 
-                    class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200">
-                정품타 입장하기
-            </button>
-        </div>
+		$errorBox.addClass('hidden');
 
-        <div class="mt-8 text-center text-sm text-gray-700">
-            계정이 없으신가요? <a href="/signup" class="text-green-800 font-bold hover:underline">회원가입</a>
-        </div>
-    </div>
+		if (id == '' || pw == '') {
+			$errorBox.text('아이디와 비밀번호를 모두 입력해주세요.');
+			$errorBox.removeClass('hidden'); // 숨김 해제
+			return;
+		}
 
-		<script>
-			function login() {
-        const id = $('#loginId').val();
-        const pw = $('#loginPw').val();
-        let $errorBox = $('#error-msg');
+		$.ajax({
+			type: 'POST',
+			url: '/api/login',
+			data: {
+				id_give: id,
+				pw_give: pw
+			},
+			success: function (response) {
+				alert('로그인 성공!');
+				// sessionStorage.setItem('mytoken', response['token']); // 토큰 세션 스토리지에 저장
+				window.location.href = '/'; // index.html로 이동
+			},
+			error: function (xhr) {
+				// 서버가 400, 401, 500 등 에러 코드를 보냈을 때
+				// xhr.responseJSON 안에는 백엔드에서 보낸 {"result": "fail", "msg": "..."}
 
-        $errorBox.addClass('hidden');
+				let errorMessage = '서버와 통신 중 오류 발생'; // 기본 메시지
 
-        if (id == '' || pw == '') {
-          $errorBox.text("아이디와 비밀번호를 모두 입력해주세요.");
-          $errorBox.removeClass('hidden'); // 숨김 해제
-          return;
-        }
+				if (xhr.responseJSON && xhr.responseJSON.msg) {
+					errorMessage = xhr.responseJSON.msg; // "아이디/비밀번호가 올바르지 않습니다" 등
+				}
 
-        $.ajax({
-          type: "POST",
-          url: "/api/login",
-          data: {
-            id_give: id,
-            pw_give: pw
-          },
-          success: function (response) {
-              alert('로그인 성공!');
-              // sessionStorage.setItem('mytoken', response['token']); // 토큰 세션 스토리지에 저장
-              window.location.href = '/'; // index.html로 이동
-          },
-          error: function (xhr) {
-          // 서버가 400, 401, 500 등 에러 코드를 보냈을 때
-          // xhr.responseJSON 안에는 백엔드에서 보낸 {"result": "fail", "msg": "..."}
-          
-          let errorMessage = "서버와 통신 중 오류 발생"; // 기본 메시지
-          
-          if (xhr.responseJSON && xhr.responseJSON.msg) {
-              errorMessage = xhr.responseJSON.msg; // "아이디/비밀번호가 올바르지 않습니다" 등
-          }
-
-          // 에러 박스에 메시지 띄우기
-          $errorBox.text(errorMessage);
-          $errorBox.removeClass("hidden");
-        }
-      });
-    }
-		</script>
-	</body>
-</html>
+				// 에러 박스에 메시지 띄우기
+				$errorBox.text(errorMessage);
+				$errorBox.removeClass('hidden');
+			}
+		});
+	}
+</script>
+{% endblock %}

@@ -88,8 +88,27 @@ def reset():
 
 @app.route('/')
 def home():
+    # 1. quote logic
+    quotes = list(db.quotes.find({}, {'_id': False}))
+    random_quote = random.choice(quotes)['text'] if quotes else "몰입의 즐거움!"
 
-    return render_template('test.html')
+    # 2. leaderboard logic (필터 적용 아직 안됨)
+    # 전체 유저를 공부 시간 내림차순으로 가져오기
+    leaderboard = list(db.user.find({}, {'_id': 0}).sort('total_time', -1))
+
+    # 3. my information (testid는 세션이나 전역 변수에서 온다고 가정))
+    me = db.user.find_one({'std_id': testid}, {'_id': 0})
+
+    if not me:
+        return "유저 정보가 없습니다. 로그인을 먼저 해주세요"
+    
+    my_rank = 1
+    for user in leaderboard:
+        if user['std_id'] == testid:
+            break
+        my_rank += 1
+
+    return render_template('index.html', quote=random_quote, ranking_list=leaderboard[:30], my_rank=my_rank, my_name=me['nickname'], my_total_time=me['total_time'])
 
 #현재 id(testid)의 현재 시간을 '년:월:일:시간:분:초'로 저장
 #output='nowtime':현재 시간
@@ -165,7 +184,7 @@ def end_time():
         'start_time':None
     }}      
     )
-                                 
+
     return jsonify({'result':'success', 'totaltime':totaltimeret,'thisSestime':thisSestime,'todaytimes':todaytimes})
 
 #유저를 전부 읽어서 총 숫자를 내림차순으로 정렬 후 최대 30명까지 출력하는 함수
