@@ -58,7 +58,9 @@
 								credentials: 'include'
 							});
 						} else {
-							// 🚨 이 부분을 /login 에서 /logout 으로 변경합니다!
+							// 🚨 프론트엔드 스토리지 완벽 파기 후 로그아웃 라우트로 이동
+							sessionStorage.clear();
+							localStorage.clear();
 							location.href = '/logout'; 
 						}
 					}

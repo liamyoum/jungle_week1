@@ -368,6 +368,7 @@ def logout():
         user_id = payload.get("user_id")
         if user_id:
             db.sessions.delete_one({"user_id": user_id})
+    print("로그아웃 작동")
 
     resp = make_response(redirect("/login"))
     resp.delete_cookie("access_token", path="/")
