@@ -478,36 +478,41 @@ def result():
     return render_template('result.html', result='success', thisSestime=thisSestime, profile_inf=me, my_rank=returnleader['myleader'], ranking_list=leaderboard)
 
 
-@scheduler.task('cron', hour='4',minute='0', id='reset')
-
+@scheduler.task('cron', hour='4', minute='0', id='reset')
 def reset():
     print("리셋 작동중!!!!")
 
-    db.user.update_many({'today_times':{'$ne':[]}}, {'$inc':{'combo':1}})
-    db.user.update_many({'today_times':{'$eq':[]}}, {'$set':{'combo':0}})
+    # 1. 콤보(연속 출석) 업데이트
+    db.user.update_many({'todaytimes': {'$ne': []}}, {'$inc': {'combo': 1}})
+    db.user.update_many({'todaytimes': {'$eq': []}}, {'$set': {'combo': 0}})
 
+    # 2. 타이머를 안 끄고 잔 유저들(start_time이 있는 유저) 정산
+    fmt = '%Y:%m:%d:%H:%M:%S'
+    now_str = time.strftime(fmt) # 현재 시간 (새벽 4시)
+    now_dt = datetime.strptime(now_str, fmt)
 
-    db.user.update_many(
-        {'today_times': {'$ne': []}},
-        [
-            {
-                '$set': {
-                    # 1. $subtract로 (86400 - start_time)을 먼저 계산
-                    # 2. $add로 total_times에 그 결과값을 더함
-                    'total_times': {
-                        '$add': [
-                            '$total_times', 
-                            {'$subtract': [86400, '$start_time']}
-                        ]
-                    }
-                }
-            }
-        ]
-    )
-    forceenduser=db.user.find({'start_time':{'$ne':None}},{'_id':0})
-    
-    
-    db.user.update_many({},{'$set':{'start_time':None,'today_times':[]}})
+    # start_time이 None이 아닌 유저만 모두 찾기
+    active_users = db.user.find({'start_time': {'$ne': None}})
+
+    for user in active_users:
+        start_str = user.get('start_time')
+        try:
+            # 파이썬에서 정상적으로 datetime 변환
+            start_dt = datetime.strptime(start_str, fmt)
+            
+            # 새벽 4시 - 시작 시간 = 켜놓고 잔 시간(초)
+            elapsed_sec = (now_dt - start_dt).total_seconds()
+            
+            # 해당 유저의 total_time에 더해주기
+            db.user.update_one(
+                {'_id': user['_id']},
+                {'$inc': {'total_time': int(elapsed_sec)}}
+            )
+        except Exception as e:
+            print(f"시간 파싱 에러 (유저 {user.get('std_id')}): {e}")
+
+    db.user.update_many({}, {'$set': {'start_time': None, 'todaytimes': []}})
+    print("리셋 완료!!!!")
     
 ## main codes
 
