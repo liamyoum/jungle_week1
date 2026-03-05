@@ -14,10 +14,12 @@
 		<div
 			class="flex gap-6 text-white/80 font-medium text-md items-center"
 		>
-			<a href="#" class="hover:text-white">리더보드</a>
-			<a href="#" class="hover:text-white">실시간 접속자</a>
-			<a href="#" class="hover:text-white">친구</a>
-			<a href="#" class="hover:text-white">마이페이지</a>
+			<a href="/" class="hover:text-white">홈</a>
+			<a href="/realTimeUser" class="hover:text-white"
+				>실시간 접속자</a
+			>
+			<a href="/friends" class="hover:text-white">친구</a>
+			<a href="/myPage" class="hover:text-white">마이페이지</a>
 			<a
 				href="/logout"
 				onclick="
@@ -42,7 +44,8 @@
 					이번에 공부한 시간
 				</h2>
 				<p class="text-5xl font-black text-green-700">
-					"{{ thisSestime }}"
+					{{ thisSestime.hours }}시간 {{ thisSestime.minutes }}분 {{
+					thisSestime.seconds }}초
 				</p>
 			</div>
 			<div>
@@ -52,7 +55,12 @@
 					지금까지 총 공부한 시간은?
 				</h2>
 				<p class="text-5xl font-black text-green-700">
-					"{{ profile_inf.total_time }} 초"
+					{% set total = profile_inf.total_time | int %} {% set days =
+					total // 86400 %} {% set hours = (total % 86400) // 3600 %}
+					{% set minutes = (total % 3600) // 60 %} {% set seconds =
+					total % 60 %} {% if days > 0 %}{{ days }}일 {% endif %} {%
+					if hours > 0 %}{{ hours }}시간 {% endif %} {% if minutes > 0
+					%}{{ minutes }}분 {% endif %} {{ seconds }}초
 				</p>
 			</div>
 		</div>
