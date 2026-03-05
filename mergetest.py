@@ -103,8 +103,6 @@ def timecal():
             'last_session': thisSestime_format
         }}      
     )
-                                 
-    # 🚨 중요: JS에서 휴식 처리를 위해 요구하는 'this_session_seconds'를 반드시 보내줘야 합니다.
     return {
         'result': 'success', 
         'totaltime': totaltimeret,
@@ -329,6 +327,7 @@ def api_refresh():
     return resp
 
 @app.route("/api/signup", methods=["POST"])
+
 def api_signup():
     std_id = request.form.get("id_give", "").strip()
     password = request.form.get("pw_give", "").strip()
@@ -457,7 +456,6 @@ def result():
         # DB에서 유저 정보를 가져옵니다.
         user_info = db.user.find_one({'std_id': g.user_id}, {'_id':0})
         
-        # KeyError 방지: ['last_session'] 대신 .get()을 사용하여 키가 없으면 0을 반환하게 합니다.
         if user_info:
             thisSestime = user_info.get('last_session', 0)
         else:
@@ -481,13 +479,34 @@ def result():
 
 
 @scheduler.task('cron', hour='4',minute='0', id='reset')
-@login_required_api
+
 def reset():
     print("리셋 작동중!!!!")
 
-    db.user.update_many({'today_times':{'$ne':[]}}, {'$inc':{'total_time':1}})
-    db.user.update_many({'today_times':{'$eq':[]}}, {'$set':{'total_time':0}})
+    db.user.update_many({'today_times':{'$ne':[]}}, {'$inc':{'combo':1}})
+    db.user.update_many({'today_times':{'$eq':[]}}, {'$set':{'combo':0}})
 
+
+    db.user.update_many(
+        {'today_times': {'$ne': []}},
+        [
+            {
+                '$set': {
+                    # 1. $subtract로 (86400 - start_time)을 먼저 계산
+                    # 2. $add로 total_times에 그 결과값을 더함
+                    'total_times': {
+                        '$add': [
+                            '$total_times', 
+                            {'$subtract': [86400, '$start_time']}
+                        ]
+                    }
+                }
+            }
+        ]
+    )
+    forceenduser=db.user.find({'start_time':{'$ne':None}},{'_id':0})
+    
+    
     db.user.update_many({},{'$set':{'start_time':None,'today_times':[]}})
     
 ## main codes
@@ -577,6 +596,7 @@ def load_leaderboard(sortMode="all"):
 #output='profile_inf'->해당 유저의 정보 통째로 출력 'replys'->댓글 출력
 #replys구조 'id':해당 댓글 작성자 'reply':해당 댓글 내용
 @app.route('/profile', methods=['GET'])
+@login_required_api # 추가된 데코레이터
 def profileshow():
     profile = request.args.get('profile',g.user_id)
     if profile == '':
@@ -603,6 +623,7 @@ def profileshow():
 #memberlist 멤버리스트
 
 @app.route('/memberlist', methods=['GET'])
+@login_required_api # 추가된 데코레이터
 def load_memberlist():
     filterMode = request.args.get('sortMode')
     me = db.user.find_one({'std_id': g.user_id}, {'_id':0})
@@ -639,6 +660,7 @@ def load_memberlist():
 
 
 @app.route('/ban',methods=['POST'])
+@login_required_page
 def banuser():
     ban_id=request.args.get('ban_id','')
     if ban_id is None:
@@ -664,6 +686,7 @@ def unbanuser():
 #'person'과 'text'를 받아서 person의 댓글에 현재 계정으로 작성하는 함수
 #input='text'->댓글 내용,'person'->누구에게 댓글을 쓰는지
 @app.route('/profile', methods=['POST'])
+@login_required_page
 def wirtereply():
     text=request.args.get('replytext','')
     person=request.args.get('person','')
@@ -702,6 +725,7 @@ def wirtereply():
 #댓글의 id받아서 해당 댓글을 지움
 #input='del_id' 지울 댓글 id
 @app.route('/profile', methods=['DELETE'])
+@login_required_page
 def delreply():    
     del_id=request.args.get('del_id','')
     del_user=request.args.get('del_user','')
@@ -713,7 +737,8 @@ def delreply():
     db.reply.update_one({'std_id': del_user},{'$pull': {'replys': {'reply_id': int(del_id)}}})
     return jsonify({'result':'success'})
 
-@app.route('/freinds',methods=['POST'])
+@app.route('/friends',methods=['POST'])
+@login_required_page
 def add_freinds_user():
     add_id=request.args.get('friends','')
     if add_id is None:
@@ -724,7 +749,8 @@ def add_freinds_user():
     db.user.update_one({'std_id': g.user_id},{'$push': {'friends': add_id}})
     return jsonify({'result':'success'})
     
-@app.route('/freinds',methods=['DELETE'])
+@app.route('/friends',methods=['DELETE'])
+@login_required_page
 def del_freinds_user():
     del_id=request.args.get('friends','')
     if del_id is None:
@@ -735,6 +761,61 @@ def del_freinds_user():
     db.user.update_one({'std_id': g.user_id},{'$pull': {'friends': del_id}})
     return jsonify({'result':'success'})
     
+##
+
+
+# ==========================================
+# 상단 탭 페이지 이동 라우트
+# ==========================================
+
+@app.route('/realTimeUser')
+@login_required_page
+def real_time_user_page():
+    return render_template('realTimeUser.html')
+
+@app.route('/friends')
+@login_required_page
+def friends_page():
+    return render_template('friends.html')
+
+@app.route('/myPage')
+@login_required_page
+def my_page():
+    user_info = db.user.find_one({'std_id': g.user_id}, {'_id': 0})
+    if not user_info:
+        return redirect('/')
+        
+    target_reply = db.reply.find_one({'std_id': g.user_id}, {'_id': 0})
+    replys = target_reply.get('replys', []) if target_reply else[]
+    
+    total_sec = user_info.get('total_time', 0)
+    time_dict = sectoformat(total_sec)
+    user_info['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분 {time_dict['seconds']}초"
+    user_info['combo'] = 0 # 연속 학습 일수 (현재 DB에 없으므로 임시로 0 처리)
+    
+    return render_template('myPage.html', profile_inf=user_info, replys=replys)
+
+@app.route('/friendsprofile')
+@login_required_page
+def freinds_page():
+    user_info = db.user.find_one({'std_id': g.user_id}, {'_id': 0})
+    if not user_info:
+        return redirect('/')
+        
+    # myPage에서 보여줄 댓글 데이터 가져오기
+    target_reply = db.reply.find_one({'std_id': g.user_id}, {'_id': 0})
+    replys = target_reply.get('replys', []) if target_reply else[]
+    
+    # 초(second) 단위로 되어있는 총 공부시간을 00시간 00분 형식의 문자열로 변환
+    total_sec = user_info.get('total_time', 0)
+    time_dict = sectoformat(total_sec)
+    user_info['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분"
+    user_info['combo'] = 0 # 연속 학습 일수 (현재 DB에 없으므로 임시로 0 처리)
+    
+    return render_template('friendsProfile.html', profile_inf=user_info, replys=replys)
+
+
+##
 
 
 
