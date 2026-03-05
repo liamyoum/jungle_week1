@@ -11,7 +11,7 @@ from functools import wraps
 # Config
 ACCESS_EXP_MINUTE = 20
 REFRESH_EXP_DAYS = 1
-HEARTBEAT_GRACE_MINUTES = 2
+HEARTBEAT_GRACE_MINUTES = 5
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-only-secret")
 JWT_ALG = "HS256"
