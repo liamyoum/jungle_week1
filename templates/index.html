@@ -130,4 +130,14 @@
 		</div>
 	</section>
 </div>
+<script>
+  setInterval(()=>{
+    fetch("/api/heartbeat",{
+      method:"POST",
+      headers:{
+        "X-Tab-Id": sessionStorage.getItem("tab_id")
+      }
+    })
+  },60000)
+</script>
 {% endblock %}

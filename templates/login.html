@@ -50,9 +50,21 @@
 </div>
 
 <script>
+  function getTabId() {
+    let tabId = sessionStorage.getItem("tab_id")
+
+    if (!tabId) {
+      tabId = crypto.randomUUID()
+      sessionStorage.setItem("tab_id", tabId)
+    }
+
+    return tabId
+  }
+
 	function login() {
-		const id = $('#loginId').val();
-		const pw = $('#loginPw').val();
+    const id = $('#loginId').val();
+    const pw = $('#loginPw').val();
+    const tabId = getTabId();
 		let $errorBox = $('#error-msg');
 
 		$errorBox.addClass('hidden');
@@ -66,10 +78,11 @@
 		$.ajax({
 			type: 'POST',
 			url: '/api/login',
-			data: {
-				id_give: id,
-				pw_give: pw
-			},
+      data: {
+        id_give: id,
+        pw_give: pw,
+        tab_id_give: tabId
+      },
 			success: function (response) {
 				alert('로그인 성공!');
 				// sessionStorage.setItem('mytoken', response['token']); // 토큰 세션 스토리지에 저장
