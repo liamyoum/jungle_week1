@@ -39,10 +39,10 @@
 		<div class="mb-6 space-y-10">
 			<div>
 				<h2 class="text-m font-bold text-black tracking-widest mb-1">
-					오늘 공부한 시간
+					이번에 공부한 시간
 				</h2>
 				<p class="text-5xl font-black text-green-700">
-					"{{ profile_inf.todaytimes }}"
+					"{{ thisSestime.seconds }}"
 				</p>
 			</div>
 			<div>
@@ -96,9 +96,9 @@
 							{{ loop.index }}위
 						</td>
 						<td class="px-6 py-4 font-semibold text-gray-800">
-							{{ user.name }}
+							{{ user.std_id }}
 						</td>
-						<td class="px-6 py-4 text-gray-500">{{ user.number }}</td>
+						<td class="px-6 py-4 text-gray-500">{{ user.std_id }}</td>
 						<td class="px-6 py-4 font-mono text-green-600">
 							{{ user.total_time }}
 						</td>
@@ -115,7 +115,7 @@
 			<div class="flex gap-4 items-center">
 				<span class="text-2xl font-black">{{ my_rank }}위</span>
 				<span class="text-sm opacity-80"
-					>{{ my_name }} ({{ my_total_time }})</span
+					>{{ profile_inf.nickname }} ({{ profile_inf.totaltime }})</span
 				>
 			</div>
 		</div>

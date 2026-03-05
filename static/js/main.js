@@ -161,7 +161,7 @@ function pauseSession() {
 
 					startStopwatch(newStartTime, accumulated);
 				} else {
-					alert('잠시 후 다시 시도해주세요!');
+					alert(response['message']);
 				}
 			}
 		});
@@ -177,17 +177,13 @@ function endSession() {
 		window.location.href = '/result';
 	} else {
 		$.ajax({
-			type: 'POST',
-			url: '/timerend',
+			
+			url: '/result',
 			success: function (response) {
-				if (response['result'] == 'success') {
-					sessionStorage.removeItem('startTime'); // 서버에서 start_time도 None 됨
-					alert('수고하셨습니다! 결과 페이지로 이동합니다.');
-					window.location.href = '/result';
-				}
+						window.location.href = '/result';
 			},
-			error: function () {
-				alert('기록 저장 중 오류가 발생했습니다.');
+			error: function (response) {
+				alert(response);
 			}
 		});
 	}
