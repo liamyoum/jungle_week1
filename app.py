@@ -22,7 +22,6 @@ MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
 db = client.jungle
 
-# users: std_id unique
 db.users.create_index("std_id", unique=True)
 
 # sessions
@@ -34,7 +33,7 @@ db.sessions.create_index("sid", unique=True)
 def utcnow():
     return datetime.datetime.utcnow()
 
-# JWT helpers
+# JWT
 def create_access_token(user_id: str, sid: str) -> str:
     now = utcnow()
     payload = {
@@ -63,7 +62,6 @@ def verify_token(token: str):
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return None
 
-# Response helpers
 def fail(msg, code):
     return jsonify({"result": "fail", "msg": msg}), code
 
@@ -73,15 +71,13 @@ def ok(msg="success", data=None):
         payload["data"] = data
     return jsonify(payload)
 
-# Session helpers
-def issue_new_session(user_id: str, tab_id: str):
+def issue_new_session(user_id: str):
     sid = secrets.token_urlsafe(24)
     now = utcnow()
 
-    # user_id unique 인덱스가 있으므로 upsert로 "기존 세션 덮어쓰기" = 강제 종료 효과
     db.sessions.update_one(
         {"user_id": user_id},
-        {"$set": {"sid": sid, "tab_id": tab_id, "last_seen": now}},
+        {"$set": {"sid": sid, "last_seen": now}},
         upsert=True
     )
 
@@ -89,24 +85,14 @@ def issue_new_session(user_id: str, tab_id: str):
     refresh = create_refresh_token(user_id, sid)
     return sid, access, refresh
 
-def get_request_tab_id():
-    # 프론트가 모든 API 호출에 이 헤더를 같이 보내야 "탭 1개만" 강제 가능
-    return request.headers.get("X-Tab-Id") or request.cookies.get("tab_id") or ""
-
-def validate_session_or_fail(user_id: str, sid: str, tab_id: str):
+def validate_session_or_fail(user_id: str, sid: str):
     sess = db.sessions.find_one({"user_id": user_id})
     if not sess:
         return None, fail("세션 없음", 401)
 
-    # 다른 기기 로그인/새 탭 로그인으로 sid가 바뀌었으면 기존 access는 즉시 무효
+    # 다른 기기 로그인/재로그인으로 sid가 바뀌었으면 기존 access는 즉시 무효
     if sess.get("sid") != sid:
         return None, fail("다른 곳에서 로그인됨", 401)
-
-    # 탭 1개만 허용: 탭 id 불일치면 즉시 종료
-    if not tab_id or sess.get("tab_id") != tab_id:
-        # 기존 세션을 날려버리면 “탭 여러개 금지”를 강하게 강제 가능
-        db.sessions.delete_one({"user_id": user_id})
-        return None, fail("다른 탭에서 접속됨", 401)
 
     last_seen = sess.get("last_seen")
     if not last_seen:
@@ -129,23 +115,20 @@ def login_required_page(f):
 
         user_id = payload.get("user_id")
         sid = payload.get("sid")
-        tab_id = get_request_tab_id()
 
         if not user_id or not sid:
             return redirect('/login')
 
-        _, err = validate_session_or_fail(user_id, sid, tab_id)
+        _, err = validate_session_or_fail(user_id, sid)
         if err:
-            # 세션이 만료/탭불일치면 쿠키도 지우고 로그인으로
+            # 세션이 만료면 쿠키도 지우고 로그인으로
             resp = make_response(redirect('/login'))
             resp.delete_cookie("access_token", path="/")
             resp.delete_cookie("refresh_token", path="/api")
-            resp.delete_cookie("tab_id", path="/")
             return resp
 
         g.user_id = user_id
         g.sid = sid
-        g.tab_id = tab_id
         return f(*args, **kwargs)
     return wrapper
 
@@ -162,18 +145,16 @@ def login_required_api(f):
 
         user_id = payload.get("user_id")
         sid = payload.get("sid")
-        tab_id = get_request_tab_id()
 
         if not user_id or not sid:
             return fail("토큰 형식 오류", 401)
 
-        _, err = validate_session_or_fail(user_id, sid, tab_id)
+        _, err = validate_session_or_fail(user_id, sid)
         if err:
             return err
 
         g.user_id = user_id
         g.sid = sid
-        g.tab_id = tab_id
         return f(*args, **kwargs)
     return wrapper
 
@@ -191,23 +172,20 @@ def login_page():
 def signup_page():
     return render_template('signup.html')
 
-# Auth APIs
+# API
 @app.route('/api/login', methods=['POST'])
 def api_login():
     user_id = request.form.get('id_give', '').strip()
     user_pw = request.form.get('pw_give', '').strip()
 
-    # 탭 1개만 허용하려면 로그인할 때 tab_id를 받아야 함 (프론트에서 sessionStorage에 저장해서 보내기)
-    tab_id = request.form.get('tab_id_give', '').strip()
-
-    if not user_id or not user_pw or not tab_id:
+    if not user_id or not user_pw:
         return fail("아이디/비밀번호를 입력해주세요", 400)
 
     user = db.users.find_one({'std_id': user_id})
     if (not user) or (not check_password_hash(user.get('password', ''), user_pw)):
         return fail("아이디/비밀번호가 올바르지 않습니다", 401)
 
-    _, access_token, refresh_token = issue_new_session(user['std_id'], tab_id)
+    _, access_token, refresh_token = issue_new_session(user['std_id'])
 
     resp = make_response(ok("로그인 성공"))
 
@@ -215,7 +193,7 @@ def api_login():
         "access_token",
         access_token,
         httponly=True,
-        secure=False,      # 배포 HTTPS면 True
+        secure=False,
         samesite="Lax",
         max_age=ACCESS_EXP_MINUTE * 60,
         path="/"
@@ -225,20 +203,10 @@ def api_login():
         "refresh_token",
         refresh_token,
         httponly=True,
-        secure=False,      # 배포 HTTPS면 True
-        samesite="Lax",
-        max_age=REFRESH_EXP_DAYS * 24 * 60 * 60,
-        path="/api"        # refresh는 API에만
-    )
-
-    resp.set_cookie(
-        "tab_id",
-        tab_id,
-        httponly=False,  # 필요에 따라 True/False
         secure=False,
         samesite="Lax",
         max_age=REFRESH_EXP_DAYS * 24 * 60 * 60,
-        path="/"
+        path="/api"
     )
 
     return resp
@@ -255,13 +223,12 @@ def api_refresh():
 
     user_id = payload.get("user_id")
     sid = payload.get("sid")
-    tab_id = get_request_tab_id()
 
     if not user_id or not sid:
         return fail("리프레시 토큰 형식 오류", 401)
 
-    # refresh 시에도 세션/탭/하트비트 강제
-    _, err = validate_session_or_fail(user_id, sid, tab_id)
+    # refresh 시에도 세션/하트비트 강제
+    _, err = validate_session_or_fail(user_id, sid)
     if err:
         return err
 
@@ -325,10 +292,9 @@ def logout():
     resp = make_response(redirect('/login'))
     resp.delete_cookie("access_token", path="/")
     resp.delete_cookie("refresh_token", path="/api")
-    resp.delete_cookie("tab_id", path="/")
     return resp
 
-# Heartbeat API (5분 grace)
+# Heartbeat
 @app.route('/api/heartbeat', methods=['POST'])
 @login_required_api
 def heartbeat():
@@ -337,12 +303,6 @@ def heartbeat():
         {"$set": {"last_seen": utcnow()}}
     )
     return ok("alive")
-
-# Example protected API
-@app.route('/api/me', methods=['GET'])
-@login_required_api
-def me():
-    return ok(data={"user_id": g.user_id})
 
 # Run
 if __name__ == '__main__':
