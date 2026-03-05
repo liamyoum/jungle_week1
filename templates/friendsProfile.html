@@ -101,20 +101,36 @@
     </main>
 
     <script>
-        
-        // 간단한 댓글 추가 로직 (나중에 서버 연동 시 수정)
-        $(function() {
-            $('#submit-comment').click(function() {
+        $(document).ready(function () {
+            $('#submit-comment').click(function () {
                 const text = $('#comment-input').val();
-                if(text) {
-                    const newComment = `
-                        <div class="bg-gray-50 p-4 rounded-xl text-sm animate-fade-in">
-                            <span class="font-bold text-green-700">나</span>: ${text}
-                        </div>`;
-                    $('#comment-list').append(newComment);
-                    $('#comment-input').val('');
-                    // 스크롤 아래로 내리기
-                    $('#comment-list').scrollTop($('#comment-list')[0].scrollHeight);
+                const person = "{{ profile_inf.std_id }}"; 
+
+                if (text) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/profile", // URL은 깔끔하게 유지
+                        data: {
+                            // 백엔드 친구가 request.form.get('replytext')로 받을 이름들
+                            replytext: text,
+                            person: person
+                        },
+                        success: function (response) {
+                            if (response.result === 'success') {
+                                // 화면에 즉시 추가하는 로직 (동일)
+                                const newComment = `
+                                    <div class="bg-gray-50 p-4 rounded-xl text-sm animate-fade-in">
+                                        <span class="font-bold text-green-700">나</span>: ${text}
+                                    </div>`;
+                                
+                                $('#comment-list').append(newComment);
+                                $('#comment-input').val('');
+                                $('#comment-list').scrollTop($('#comment-list')[0].scrollHeight);
+                            } else {
+                                alert(response.message || "오류가 발생했습니다.");
+                            }
+                        }
+                    });
                 }
             });
         });
