@@ -7,10 +7,9 @@ from functools import wraps
 
 app = Flask(__name__)
 # Flask 세션 사용을 위한 secret key 설정
-# 개발 환경에서는 "dev-only-secret"을 기본값으로 사용하지만, 실제 배포 시에는 환경변수로 설정된 값을 사용하도록 합니다.
+# 배포시 서버에 SECRET_KEY 환경변수 등록 되어있는지 확인, dev-only-secret 삭제
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-secret")
 
-# 세션 쿠키 옵션 설정
 # 보안을 강화하기 위해 세션 쿠키에 대한 옵션을 설정합니다.
 # 배포 시에는 SESSION_COOKIE_SECURE를 True로 설정!!
 app.config.update(
@@ -20,12 +19,9 @@ app.config.update(
     SESSION_PERMANENT=False
 )
 
-# 로컬용
+# 배포시 서버에 MONGO_URI 환경변수 등록 되어있는지 확인, localhost:27017 삭제
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-
-# 배포용
-# client = MongoClient("mongodb://test:test@mongo:27017/jungle/", serverSelectionTimeoutMS=3000)
 
 db = client.jungle
 
@@ -42,7 +38,7 @@ def ok(msg="success", data=None):
         payload["data"] = data
     return jsonify(payload)
 
-def login_required(f):
+def login_required_page(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if 'user_id' not in session:
@@ -50,8 +46,16 @@ def login_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+def login_required_api(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'user_id' not in session:
+            return fail("인증 필요", 401)
+        return f(*args, **kwargs)
+    return wrapper
+
 @app.route('/')
-@login_required
+@login_required_page
 def home():
     return render_template('index.html')
 

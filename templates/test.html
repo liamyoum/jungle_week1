@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>API 기능 테스트</title>
+    <style>
+        .container { display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; }
+        .box { border: 1px solid #aaa; padding: 15px; border-radius: 8px; width: 300px; background: #fff; }
+        pre { background: #222; color: #0f0; padding: 10px; font-size: 12px; height: 150px; overflow-y: auto; }
+        button { margin: 5px 0; width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>기능 테스트 페이지</h1>
+
+    <div class="container">
+        <!-- 리더보드 기능 -->
+        <div class="box">
+            <h3>리더보드 (Rank)</h3>
+            <button onclick="test('/leaderboard?sortMode=all')">전체 리더보드</button>
+            <button onclick="test('/leaderboard?sortMode=friends')">친구만 보기</button>
+            <div id="res-leader"></div>
+        </div>
+
+        <!-- 멤버 리스트 기능 -->
+        <div class="box">
+            <h3>멤버 리스트 (Member)</h3>
+            <button onclick="test('/memberlist?sortMode=Now')">현재 접속 멤버</button>
+            <button onclick="test('/memberlist?sortMode=bans')">밴 멤버만</button>
+            <div id="res-member"></div>
+        </div>
+
+        <!-- 밴 목록 기능 (프로필 조회 시 ban_id가 나옴) -->
+        <div class="box">
+            <h3>밴 관리</h3>
+            <button onclick="test('/profile?profile=1557')">내 프로필(밴목록 확인)</button>
+            <input id="ban-id" placeholder="유저ID 입력">
+            <button onclick="banAction('POST')">밴 추가</button>
+            <button onclick="banAction('DELETE')">밴 삭제</button>
+            <div id="res-ban"></div>
+        </div>
+    </div>
+
+    <script>
+        // 공통 요청 함수
+        async function test(url) {
+            const res = await fetch(url);
+            const data = await res.json();
+            let targetId = url.includes('leader') ? 'res-leader' : 
+                           url.includes('member') ? 'res-member' : 'res-ban';
+            document.getElementById(targetId).innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // 밴 추가/삭제용
+        async function banAction(method) {
+            const id = document.getElementById('ban-id').value;
+            const res = await fetch(`/ban?ban_id=${id}`, { method: method });
+            const data = await res.json();
+            document.getElementById('res-ban').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+    </script>
+</body>
+</html>
