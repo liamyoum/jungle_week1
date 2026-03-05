@@ -138,12 +138,13 @@
               // 세션 스토리지에 저장해야 새로고침해도 타이머 유지
               sessionStorage.setItem('startTime', serverStartTime);
 
-							timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
-        <p class="text-3xl font-black text-green-700">${serverStartTime}</p>
-        <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
-        <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>` 
+							// 갈아 끼우기
 
-							// 2. timehtml 갈아 끼우기
+              timehtml = `<h2 class="text-m font-bold text-gray-400 tracking-widest mb-1">현재 세션 시작 시각</h2>
+              <p class="text-3xl font-black text-green-700">${serverStartTime}</p>
+              <h2 class="text-m font-bold text-gray-400 tracking-widest mt-1 mb-1">지금까지 이만큼 공부했어요</h2>
+              <p id="stopwatch-display" class="text-3xl font-black text-green-700">00:00:00</p>` 
+
 							$('#start-time-display').html(timehtml);
 
               $('#start-btn').addClass('hidden');
@@ -156,7 +157,9 @@
 							startStopwatch(serverStartTime);
 
 						}
-					}
+					}, error: function () {
+
+          }
 				});
 			}
 
