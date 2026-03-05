@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Required meta tags -->
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, shrink-to-fit=no"
+		/>
+		<!-- Tailwind -->
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<!-- Jquery -->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<!-- 구글폰트 -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
+			rel="stylesheet"
+		/>
+    <title>정품타</title>
+
+    <style>
+      .jungle-bg {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                              url('../img/jungle.jpg');
+            background-size: cover;
+            background-position: center;
+      }
+    </style>
+
+	<body class="jungle-bg bg-cover bg-fixed min-h-screen flex justify-center">
+		<nav class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all">
+      <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+        <div class="font-bold text-3xl text-white tracking-tighter cursor-pointer">
+          정품타
+        </div>
+
+        <div class="flex gap-6 text-white/80 font-medium text-md items-center">
+          <a href="#" class="hover:text-white">리더보드</a>
+          <a href="#" class="hover:text-white">실시간 접속자</a>
+          <a href="#" class="hover:text-white">친구</a>
+          <a href="#" class="hover:text-white">마이페이지</a>
+          <button class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto pt-32 pb-24 px-4">
+        <section class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden border border-white/20">
+            <div class="p-8 text-center border-b border-gray-100 bg-green-50/50">
+                <h2 id="nickname" class="text-4xl font-black text-gray-800 tracking-tight">
+                    <span class="text-gray-400 font-normal text-lg"></span> 마이 페이지
+                </h2>
+            </div>
+
+            <div class="p-8 space-y-10">
+                <div class="space-y-3">
+                    <!-- 여기에 프로그래스바 로직 들어가야됨 + 서버에서 시작+종료 시간들 받아와야됨-->
+                    <div class="flex justify-between items-end">
+                        <span class="text-sm font-bold text-gray-500">오늘의 진행상태</span>
+                        <span class="text-2xl font-black text-green-600">75%</span>
+                    </div>
+                    <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full shadow-inner transition-all duration-1000" style="width: 75%;"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-green-50 p-6 rounded-2xl border border-green-100">
+                        <p class="text-xs font-bold text-green-700 mb-1">총 공부시간</p>
+                        <p id="total-time" class="text-2xl font-black text-gray-800">128시간 30분</p>
+                    </div>
+                    <div class="bg-orange-50 p-6 rounded-2xl border border-orange-100">
+                        <p class="text-xs font-bold text-orange-700 mb-1">연속 학습</p>
+                        <p id="streak-days" class="text-2xl font-black text-gray-800">15일째</p>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        응원 한마디 <span class="text-sm font-normal text-gray-400">(3)</span>
+                    </h3>
+                    
+                    <div id="comment-list" class="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
+                        <div class="bg-gray-50 p-4 rounded-xl text-sm">
+                            <span class="font-bold text-green-700">열공중</span>: 오늘 하루도 고생 많으셨어요!
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-xl text-sm">
+                            <span class="font-bold text-green-700">코딩왕</span>: 연속 15일이라니 대단합니다 ㄷㄷ
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 bg-gray-100 p-2 rounded-2xl focus-within:ring-2 focus-within:ring-green-500 transition-all">
+                        <input type="text" id="comment-input" placeholder="댓글을 입력하세요..." 
+                               class="flex-1 bg-transparent border-none outline-none px-3 text-sm" />
+                        <button id="submit-comment" class="bg-green-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-green-700 transition cursor-pointer">
+                            등록
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 간단한 댓글 추가 로직 (나중에 서버 연동 시 수정)
+        $(document).ready(function() {
+            $('#submit-comment').click(function() {
+                const text = $('#comment-input').val();
+                if(text) {
+                    const newComment = `
+                        <div class="bg-gray-50 p-4 rounded-xl text-sm animate-fade-in">
+                            <span class="font-bold text-green-700">나</span>: ${text}
+                        </div>`;
+                    $('#comment-list').append(newComment);
+                    $('#comment-input').val('');
+                    // 스크롤 아래로 내리기
+                    $('#comment-list').scrollTop($('#comment-list')[0].scrollHeight);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Required meta tags -->
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, shrink-to-fit=no"
+		/>
+		<!-- Tailwind -->
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<!-- Jquery -->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<!-- 구글폰트 -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
+			rel="stylesheet"
+		/>
+    <title>정품타</title>
+
+    <style>
+      .jungle-bg {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                              url('../img/jungle.jpg');
+            background-size: cover;
+            background-position: center;
+      }
+    </style>
+
+	<body class="jungle-bg bg-cover bg-fixed min-h-screen flex justify-center">
+		<nav class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all">
+      <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+        <div class="font-bold text-3xl text-white tracking-tighter cursor-pointer">
+          정품타
+        </div>
+
+        <div class="flex gap-6 text-white/80 font-medium text-md items-center">
+          <a href="#" class="hover:text-white">리더보드</a>
+          <a href="#" class="hover:text-white">실시간 접속자</a>
+          <a href="#" class="hover:text-white">친구</a>
+          <a href="#" class="hover:text-white">마이페이지</a>
+          <button class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-16">
+      
+        <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800">친구 목록</h2>
+                <span id="page-indicator" class="text-sm font-medium text-green-700 bg-green-100 px-3 py-1 rounded-full">1 / 1</span>
+            </div>
+
+            <div class="w-full">
+                <table class="w-full text-left table-fixed">
+                    <thead class="sticky top-0 bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr>
+                            <th class="px-6 py-4">닉네임</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임1</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임2</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임3</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임4</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임5</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임6</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임7</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임8</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임9</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임10</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임11</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+                         <tr>
+                            <th class="px-6 py-4">닉네임12</th>
+                            <th class="px-6 py-4 text-right">총 공부 시간</th>
+                         </tr>
+
+                     </thead>
+                <tbody id="friend-list-tbody" class="divide-y divide-gray-50"></tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-between items-center p-4 bg-gray-50/50 border-t border-gray-100">
+                <button id="prev-page" class="flex items-center gap-1 text-gray-500 hover:text-green-600 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                이전
+                </button>
+                <button id="next-page" class="flex items-center gap-1 text-gray-500 hover:text-green-600 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                다음
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </section>
+    </div>
+    <script>
+        //나중에 nick이랑 총공부시간 서버에서 받아와야됨. 여기도 jinja써야 되겠다. 뚫어놔야겠네//
+        
+        const itemsPerPage = 10;
+        let currentPage = 1;
+
+        function renderTable() {
+            const totalPages = Math.ceil(allFreinds.length / itemsPerPage);
+            const startIndex = (currentPage -1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentData = allFreinds.slice(startIndex, endIndex);
+
+            let friendRows = ''
+            currentData.forEach(user => {
+                html += `
+                    <tr class="hover:bg-green-50/50 transition h-14"> 
+                        <td class="px-6 py-4 font-semibold text-gray-800">${user.name}</td>
+                        <td class="px-6 py-4 font-mono text-green-600 text-right">${user.total_time}</td>
+                     </tr>
+                `;
+            });
+
+            $('friend-list-tbody').html(friendRows);
+
+            $('#page-indicator').text(`${currentPage} / ${totalPages}`);
+            $('#prev-page').prop('disabled', currentPage === 1);
+            $('#nest-page').prop('disabled', currentPage === totalPages);
+
+            $('.overflow-y-auto').scrollTop(0);
+        }
+
+        $('#prev-page').click(function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+
+
+        $('#next-page').click(function() {
+            const totalPages = Math.ceil(allFreinds.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+        renderTable();
+    </script>
+	</body>
+</html>
