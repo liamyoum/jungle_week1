@@ -146,7 +146,7 @@ def start_time():
 #todaytimes 구조 {'start_time', 'end_time'}
 
 @app.route('/timerend', methods=['POST'])
-def giime():
+def end_time():
 
     target_user = db.user.find_one({'std_id': testid}, {'_id':0})
     if "start_time" in target_user: 
@@ -289,5 +289,5 @@ def randquote():
 
 if __name__ == '__main__':
     
-    app.run('0.0.0.0', port=5000, debug=True)
+    app.run('0.0.0.0', port=5001, debug=True)
 
