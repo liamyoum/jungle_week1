@@ -113,7 +113,7 @@
 			});
 
       function startSession() {
-				alert('시작 버튼 정상 작동')
+				alert('시작 버튼 정상 작동');
 
 				$.ajax({
 					type: 'POST',
@@ -143,8 +143,15 @@
 			function startStopwatch(startTimeStr) {
 				console.log(startTimeStr);
 
-				const time_array = startTimeStr.split(':');
-				const startTime = new
+				const t = startTimeStr.split(':'); // array, ex) [2026, 03, 04, 12, 05, 05]
+				const startTime = new Date(t[0], t[1] - 1, t[2], t[3], t[4], t[5])
+
+        setInterval(function() {
+          const now = new Date();
+          const diff = now - startTime;
+          const seconds = Math.floor(diff / 1000);
+          $('#stopwatch-display').text(seconds)
+        }, 1000)
 			}
 
       function pauseSession() {}
