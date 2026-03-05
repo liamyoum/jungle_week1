@@ -182,7 +182,8 @@ def end_time():
 def load_leaderboard():
     filterMode = request.args.get('sortMode', 'all')
     me = db.user.find_one({'std_id': testid}, {'_id':0})
-    
+    if me is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
     if filterMode == 'all':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
         if 'ban_id' in me:
@@ -246,6 +247,8 @@ def profileshow():
 def load_memberlist():
     filterMode = request.args.get('sortMode')
     me = db.user.find_one({'std_id': testid}, {'_id':0})
+    if me is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
     
     if filterMode == 'Now':
         leaderboard = list(db.user.find({'start_time':{'$ne':None}}, {'_id':0}).sort('total_time',-1))
@@ -340,7 +343,7 @@ def wirtereply():
 @app.route('/profile', methods=['DELETE'])
 def delreply():    
     del_id=request.args.get('del_id','')    
-    db.reply.delete_one({'std_id': testid},{'$pull': {'replys': {'id': del_id}}})
+    db.reply.update_one({'std_id': testid},{'$pull': {'replys': {'id': del_id}}})
     return jsonify({'result':'success'})
 
 
