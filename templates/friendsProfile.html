@@ -1,33 +1,4 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <!-- Required meta tags -->
-		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, shrink-to-fit=no"
-		/>
-		<!-- Tailwind -->
-		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-		<!-- Jquery -->
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-		<!-- 구글폰트 -->
-		<link
-			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
-			rel="stylesheet"
-		/>
-    <title>정품타</title>
-
-    <style>
-      .jungle-bg {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-                              url('../img/jungle.jpg');
-            background-size: cover;
-            background-position: center;
-      }
-    </style>
-
-	<body class="jungle-bg bg-cover bg-fixed min-h-screen flex justify-center">
+{% extends "base.html" %} {% block content %}
 		<nav class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all">
       <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
         <div class="font-bold text-3xl text-white tracking-tighter cursor-pointer">
@@ -141,5 +112,4 @@
 
 
     </script>
-</body>
-</html>
+{% endblock %}
