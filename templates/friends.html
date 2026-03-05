@@ -11,6 +11,61 @@
         </div>
     </div>
 </nav>
+<div class="w-3/5 max-w-4xl mx-auto pt-24 pb-16 px-4 space-y-16">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex gap-4">
+        <input type="text" id="new-friend-id" placeholder="친구의 ID를 입력하세요" 
+               class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+        <button onclick="addFriend()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+            친구 추가
+        </button>
+    </div>
+
+    <section class="bg-white/80 rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-800">친구 목록</h2>
+            <span id="page-indicator" class="text-sm font-medium text-green-700 bg-green-100 px-3 py-1 rounded-full">
+                1 / 1
+            </span>
+        </div>
+
+        <div class="w-full">
+            <table class="w-full text-left table-fixed">
+                <thead class="sticky top-0 bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="px-6 py-4">닉네임 (ID)</th>
+                        <th class="px-6 py-4 text-right">총 공부 시간</th>
+                        <th class="px-6 py-4 text-center w-20">삭제</th>
+                    </tr>
+                </thead>
+                <tbody id="friend-list-tbody" class="divide-y divide-gray-50">
+                    {% for friend in friend_list %}
+                    <tr class="hover:bg-green-50/50 transition h-14">
+                        <td class="px-6 py-4 font-semibold text-gray-800">
+                            {{ friend.nickname }} 
+                            <span class="text-xs text-gray-400 font-normal">({{ friend.std_id }})</span>
+                        </td>
+                        <td class="px-6 py-4 font-mono text-green-600 text-right">
+                            {{ friend.total_time }}초
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if friend.std_id != g.user_id %}
+                            <button onclick="deleteFriend('{{ friend.std_id }}')" class="text-gray-400 hover:text-red-500 transition">
+                                <svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        </section>
+</div>
+<script>
+	//나중에 nick이랑 총공부시간 서버에서 받아와야됨. 여기도 jinja써야 되겠다. 뚫어놔야겠네//
 
 <div class="w-3/5 max-w-4x1 mx-auto pt-24 pb-16 px-4 space-y-8">
     <!-- 친구 추가 섹션 -->
@@ -92,12 +147,44 @@
     function deleteFriend(friendId) {
         if (!confirm(`${friendId}님을 삭제하시겠습니까?`)) return;
 
+	$('#next-page').click(function () {
+		const totalPages = Math.ceil(allFreinds.length / itemsPerPage);
+		if (currentPage < totalPages) {
+			currentPage++;
+			renderTable();
+		}
+	});
+	renderTable();
+    
+    // 친구 추가 기능
+    function addFriend() {
+        const friendId = $('#new-friend-id').val().trim();
+        if (!friendId) { alert('ID를 입력해주세요.'); return; }
+
         $.ajax({
-            type: "DELETE",
-            url: `/friends?friends=${friendId}`,
+            type: "POST",
+            url: `/freinds?friends=${friendId}`, // 백엔드 오타(freinds) 유지
             success: function (response) {
                 if (response.result === 'success') {
-                    location.reload();
+                    alert('친구 추가 성공!');
+                    window.location.reload();
+                } else {
+                    alert(response.message);
+                }
+            }
+        });
+    }
+
+    // 친구 삭제 기능
+    function deleteFriend(friendId) {
+        if (!confirm('친구를 삭제하시겠습니까?')) return;
+
+        $.ajax({
+            type: "DELETE",
+            url: `/freinds?friends=${friendId}`,
+            success: function (response) {
+                if (response.result === 'success') {
+                    window.location.reload();
                 } else {
                     alert(response.message);
                 }
