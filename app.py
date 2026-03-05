@@ -172,6 +172,18 @@ def login_page():
 def signup_page():
     return render_template('signup.html')
 
+@app.route('/realTimeUser')
+def real_time_user():
+    return render_template('realTimeUser.html')
+
+@app.route('/friends')
+def friends():
+    return render_template('friends.html')
+
+@app.route('/myPage')
+def my_page():
+    return render_template('myPage.html')
+
 # API
 @app.route('/api/login', methods=['POST'])
 def api_login():
