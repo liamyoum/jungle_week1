@@ -713,6 +713,29 @@ def delreply():
     db.reply.update_one({'std_id': del_user},{'$pull': {'replys': {'reply_id': int(del_id)}}})
     return jsonify({'result':'success'})
 
+@app.route('/freinds',methods=['POST'])
+def add_freinds_user():
+    add_id=request.args.get('friends','')
+    if add_id is None:
+        return jsonify({'result':'fail','message':'친구 없는 유저 정보입니다!'})
+    if db.user.find_one({'std_id': add_id}, {'_id':0}) is None:
+        return jsonify({'result':'fail','message':'친구 없는 유저 정보입니다!'})    
+        
+    db.user.update_one({'std_id': g.user_id},{'$push': {'friends': add_id}})
+    return jsonify({'result':'success'})
+    
+@app.route('/freinds',methods=['DELETE'])
+def del_freinds_user():
+    del_id=request.args.get('friends','')
+    if del_id is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+    if db.user.find_one({'std_id': del_id}, {'_id':0}) is None:
+        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+        
+    db.user.update_one({'std_id': g.user_id},{'$pull': {'friends': del_id}})
+    return jsonify({'result':'success'})
+    
+
 
 
 #명언 랜덤 출력
