@@ -25,7 +25,7 @@ MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
 
 # 배포용
-# client = MongoClient("mongodb://test:test@mongo:27017/jungle/", serverSelectionTimeoutMS=3000)
+# client = MongoClient("mongodb://test:test@localhost:27017/jungle", serverSelectionTimeoutMS=3000)
 
 db = client.jungle
 
