@@ -103,10 +103,13 @@ def start_time():
     startTimestamp = datetime.strptime(nowtime, fmt)
     startTimestamp=am4cal(startTimestamp)
     target_user = db.user.find_one({'std_id': testid}, {'_id':0})
-    if int(startTimestamp)-int(target_user['today_times'][-1]['end_time'])<10:
-        return jsonify({'result': 'fail','message':'10초 후에 다시 시도해주세요!'})
     if target_user is None:
         return jsonify({'result': 'fail','message':'no user'})
+    if len(target_user['today_times']) > 0:
+    
+        if int(startTimestamp)-int(target_user['today_times'][-1]['end_time'])<10:
+            return jsonify({'result': 'fail','message':'10초 후에 다시 시도해주세요!'})
+
 
     else:
         
@@ -264,7 +267,9 @@ def load_memberlist():
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
         if 'ban_id' in me :
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id']),leaderboard))
-        return jsonify({'result':'success','memberlist':leaderboard[:30]})
+            return jsonify({'result':'success','memberlist':leaderboard[:30]})
+        else:
+            return jsonify({'result':'success','memberlist':[]})
 
 
     else:
@@ -354,9 +359,6 @@ def randquote():
 
 if __name__ == '__main__':
     
-<<<<<<< HEAD
-    app.run('0.0.0.0', port=5001, debug=True)
-=======
     app.run('0.0.0.0', port=5000, debug=True)
     db.quotes.delete_many({})
     quotess=[ {"text":"빨리 가려면 혼자 가고, 멀리 가려면 함께 가라. — 아프리카 속담"},
@@ -374,6 +376,5 @@ if __name__ == '__main__':
           {"text":    "개미는 작지만 모이면 사자를 이긴다. — 에티오피아 속담"},
            {"text":   "스스로 빛을 내는 별보다, 서로를 비추는 별들이 더 밝은 법이다."},
            {"text":   "당신이 다른 사람의 배를 강 건너로 저어다 주면, 당신도 어느덧 강 건너에 도착해 있을 것이다. — 인도 속담"}]
->>>>>>> 1bde5b9 (일단 반최종(댓글삭제 기능 없음))
 
     db.quotes.insert_many(quotess)
