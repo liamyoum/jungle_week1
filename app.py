@@ -8,6 +8,7 @@ from functools import wraps
 app = Flask(__name__)
 # Flask 세션 사용을 위한 secret key 설정
 # 개발 환경에서는 "dev-only-secret"을 기본값으로 사용하지만, 실제 배포 시에는 환경변수로 설정된 값을 사용하도록 합니다.
+# 배포시 서버에 SECRET_KEY 환경변수 등록 되어있는지 확인, dev-only-secret 삭제
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-secret")
 
 # 세션 쿠키 옵션 설정
@@ -20,12 +21,9 @@ app.config.update(
     SESSION_PERMANENT=False
 )
 
-# 로컬용
+# 배포시 서버에 MONGO_URI 환경변수 등록 되어있는지 확인, localhost:27017 삭제
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-
-# 배포용
-# client = MongoClient("mongodb://test:test@localhost:27017", serverSelectionTimeoutMS=3000)
 
 db = client.jungle
 
