@@ -26,15 +26,13 @@ def sectoformat(totaltime):
 #output=bool type
 
 def listfilter(leaderboard,list,mode="friend",str="std_"):
+    print(leaderboard,list)
     if mode=="friend":
-        
         for x in list :
             if x==leaderboard[str+'id'] :
                 return True
-        print(leaderboard,list)
         return False
     else:
-        print("no")  
         for x in list :
             if x==leaderboard[str+'id'] :
                 return False
@@ -103,16 +101,13 @@ def start_time():
     startTimestamp=am4cal(startTimestamp)
     target_user = db.user.find_one({'std_id': testid}, {'_id':0})
     if target_user is None:
-        return jsonify({'result': 'fail','message':'no user'})
+        return jsonify({'result': 'fail','message':'no user_start'})
     if len(target_user['today_times']) > 0:
     
         if int(startTimestamp)-int(target_user['today_times'][-1]['end_time'])<10:
             return jsonify({'result': 'fail','message':'10초 후에 다시 시도해주세요!'})
-
-
-    else:
         
-        db.user.update_one(
+    db.user.update_one(
             {'std_id': testid},
             {'$set': {'start_time': nowtime}}
         )
@@ -127,6 +122,8 @@ def start_time():
 def end_time():
 
     target_user = db.user.find_one({'std_id': testid}, {'_id':0})
+    if target_user is None:
+        return jsonify({'result': 'fail','message':'no user_end'})
     if "start_time" in target_user: 
         if None ==target_user['start_time']:
             return jsonify({'result': 'fail','message':'no_start_time'})
@@ -182,7 +179,7 @@ def load_leaderboard():
     filterMode = request.args.get('sortMode', 'all')
     me = db.user.find_one({'std_id': testid}, {'_id':0})
     if me is None:
-        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+        return jsonify({'result':'fail','message':'나는 없는 유저 정보입니다!'})
     if filterMode == 'all':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
         if 'ban_id' in me:
@@ -192,6 +189,7 @@ def load_leaderboard():
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
         friends=[testid]
         friends+=me['friends']
+        print(friends)
         leaderboard=list(filter(lambda x: listfilter(x, friends),leaderboard))
         if 'ban_id' in me :
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
@@ -226,7 +224,7 @@ def profileshow():
     target_user_profile = db.user.find_one({'std_id': profile}, {'_id':0})
     
     if target_user_profile is None :
-        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+        return jsonify({'result':'fail','message':'없는 프로필 유저 정보입니다!'})
     
     if None != target_user:
         replys = target_user['replys']
@@ -247,7 +245,7 @@ def load_memberlist():
     filterMode = request.args.get('sortMode')
     me = db.user.find_one({'std_id': testid}, {'_id':0})
     if me is None:
-        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+        return jsonify({'result':'fail','message':'멤버 나는 없는 유저 정보입니다!'})
     
     if filterMode == 'Now':
         leaderboard = list(db.user.find({'start_time':{'$ne':None}}, {'_id':0}).sort('total_time',-1))
@@ -258,8 +256,7 @@ def load_memberlist():
 
     elif filterMode =='friends':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
-        friends=[testid]
-        friends+=me['friends']
+        friends=me['friends']
         leaderboard=list(filter(lambda x: listfilter(x, friends),leaderboard))
         if 'ban_id' in me :
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
@@ -283,9 +280,9 @@ def load_memberlist():
 def banuser():
     ban_id=request.args.get('ban_id','')
     if ban_id is None:
-        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})
+        return jsonify({'result':'fail','message':'밴 없는 유저 정보입니다!'})
     if db.user.find_one({'std_id': ban_id}, {'_id':0}) is None:
-        return jsonify({'result':'fail','message':'없는 유저 정보입니다!'})    
+        return jsonify({'result':'fail','message':'밴 없는 유저 정보입니다!'})    
         
     db.user.update_one({'std_id': testid},{'$push': {'ban_id': ban_id}})
     return jsonify({'result':'success'})
@@ -316,12 +313,16 @@ def wirtereply():
     count=db.reply.find_one({'admin':1}, {'_id':0})
     if  count is None:
         db.reply.insert_one({'admin':1,'counter':1})
-        count['counter']=1    
+        count['counter']=0    
     
-    countnum=count['counter']
-
+    countnum=count['counter']+1
+    print(countnum)
 
     if target_user is None:
+        db.reply.update_one(
+            {'admin': 1},
+            {'$set': {'counter': (countnum)}}
+        )
         db.reply.insert_one({'admin':0,'std_id': person,'replys':[{'id':testid,'reply':text,'reply_id':countnum}]})
 
     else:
@@ -332,17 +333,23 @@ def wirtereply():
             {'$set': {'replys': replys}}
         )
         db.reply.update_one(
-            {'counter': countnum},
-            {'$set': {'counter': (countnum+1)}}
+            {'admin': 1},
+            {'$set': {'counter': (countnum)}}
         )
-    return jsonify({'result':'success'})
+    return jsonify({'result':'success','reply_id':countnum})
 
 #댓글의 id받아서 해당 댓글을 지움
 #input='del_id' 지울 댓글 id
 @app.route('/profile', methods=['DELETE'])
 def delreply():    
-    del_id=request.args.get('del_id','')    
-    db.reply.update_one({'std_id': testid},{'$pull': {'replys': {'id': del_id}}})
+    del_id=request.args.get('del_id','')
+    del_user=request.args.get('del_user','')
+    if del_id is None:
+        return jsonify({'result':'fail','message':'댓글 정보가 없습니다!'})
+    
+    if db.reply.find_one({'std_id': del_user},{'replys': {'reply_id': del_id}}) is None:
+        return jsonify({'result':'fail','message':'없는 댓글 정보입니다!'})    
+    db.reply.update_one({'std_id': del_user},{'$pull': {'replys': {'reply_id': int(del_id)}}})
     return jsonify({'result':'success'})
 
 
@@ -360,8 +367,6 @@ def randquote():
 
 
 if __name__ == '__main__':
-    
-    app.run('0.0.0.0', port=5001, debug=True)
     db.quotes.delete_many({})
     quotess=[ {"text":"빨리 가려면 혼자 가고, 멀리 가려면 함께 가라. — 아프리카 속담"},
               {"text":"혼자서 할 수 있는 일은 작지만, 함께 할 수 있는 일은 위대하다. — 헬렌 켈러"},
@@ -380,3 +385,65 @@ if __name__ == '__main__':
            {"text":   "당신이 다른 사람의 배를 강 건너로 저어다 주면, 당신도 어느덧 강 건너에 도착해 있을 것이다. — 인도 속담"}]
 
     db.quotes.insert_many(quotess)
+
+    # 기존 데이터 삭제 (테스트 환경 초기화)
+    db.user.delete_many({})
+    db.reply.delete_many({})
+
+    # 30명의 테스트 유저 생성
+    mock_users = []
+    for i in range(1, 31):
+        std_id2 = str(1000 + i) # 1001 ~ 1030
+        user = {
+            "std_id": std_id2,
+            "start_time": None,
+            "total_time": random.randint(500, 1000), # 500초~10000초 랜덤
+            "today_times": [],
+            "friends": [], 
+            "ban_id": []
+        }
+        
+        # 친구 관계 랜덤 설정 (일부 유저에게 친구 추가)
+        if i % 3 == 0:
+            user["friends"] = ["1557"]
+        
+        mock_users.append(user)
+
+        # 1557번 유저 추가 (메인 테스트 계정)
+    mock_users.append({
+            "std_id": "1557",
+            "start_time": None,
+            "total_time": 3600,
+            "today_times": [],
+            "friends": ["1003", "1006", "1009"],
+            "ban_id": []
+        })
+    reply_data = [
+        {
+            "admin": 0,
+            "std_id": "1557", # 1557번 유저 프로필에 달린 댓글들
+            "replys": [
+                {"id": "1005", "reply": "1557님, 오늘 공부 정말 열심히 하시네요!", "reply_id": 1},
+                {"id": "1010", "reply": "대단해요! 저도 자극받고 갑니다.", "reply_id": 2}
+            ]
+        },
+        {
+            "admin": 0,
+            "std_id": "1005", # 1005번 유저 프로필에 달린 댓글들
+            "replys": [
+                {"id": "1557", "reply": "맞팔해요! 1005님 화이팅!", "reply_id": 3}
+            ]
+        },
+        {
+            "admin": 1,
+            "counter": 4 # 다음 댓글 ID는 4부터 시작하도록 설정
+        }
+    ]
+    db.reply.insert_many(reply_data)
+
+    # 데이터 삽입
+    db.user.insert_many(mock_users)
+
+    print(f"✅ 테스트 유저 {len(mock_users)}명이 성공적으로 추가되었습니다!")
+    
+    app.run('0.0.0.0', port=5001, debug=True)

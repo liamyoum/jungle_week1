@@ -4,79 +4,106 @@
     <meta charset="UTF-8">
     <title>Jungle Crafton 통합 테스트</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; }
-        .box { border: 1px solid #ccc; padding: 15px; border-radius: 10px; background: white; }
-        pre { background: #272822; color: #f8f8f2; padding: 10px; border-radius: 5px; height: 150px; overflow-y: auto; font-size: 12px; }
-        input { width: 90%; margin-bottom: 5px; padding: 5px; }
-        button { width: 100%; margin-top: 5px; cursor: pointer; padding: 8px; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f6; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+        .box { border: 1px solid #ddd; padding: 15px; border-radius: 10px; background: white; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+        pre { background: #282c34; color: #61dafb; padding: 10px; border-radius: 5px; height: 150px; overflow-y: auto; font-size: 11px; }
+        input { width: 90%; margin-bottom: 5px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 100%; margin-top: 5px; cursor: pointer; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        h3 { margin-top: 0; color: #333; font-size: 1.1em; border-bottom: 2px solid #eee; padding-bottom: 5px; }
     </style>
 </head>
 <body>
     <h1>API 통합 테스트 (testid: 1557)</h1>
     <div class="grid">
-        <!-- 타이머 -->
+        <!-- 1. 타이머 -->
         <div class="box">
-            <h3>1. 타이머</h3>
+            <h3>⏱️ 타이머</h3>
             <button onclick="req('POST', '/timerstart')">타이머 시작</button>
             <button onclick="req('POST', '/timerend')">타이머 종료</button>
             <div id="res-timer"></div>
         </div>
 
-        <!-- 리더보드 -->
+        <!-- 2. 리더보드 -->
         <div class="box">
-            <h3>2. 리더보드</h3>
+            <h3>🏆 리더보드</h3>
             <button onclick="req('GET', '/leaderboard?sortMode=all')">전체 리더보드</button>
             <button onclick="req('GET', '/leaderboard?sortMode=friends')">친구 리더보드</button>
             <div id="res-leader"></div>
         </div>
 
-        <!-- 멤버 리스트 -->
+        <!-- 3. 멤버 리스트 -->
         <div class="box">
-            <h3>3. 멤버 리스트</h3>
+            <h3>👥 멤버 리스트</h3>
             <button onclick="req('GET', '/memberlist?sortMode=Now')">현재 접속자(Now)</button>
             <button onclick="req('GET', '/memberlist?sortMode=friends')">친구 멤버만</button>
             <button onclick="req('GET', '/memberlist?sortMode=bans')">밴 목록 보기</button>
             <div id="res-member"></div>
         </div>
 
-        <!-- 밴 관리 -->
+        <!-- 4. 밴 관리 -->
         <div class="box">
-            <h3>4. 밴(Ban) 관리</h3>
+            <h3>🚫 밴(Ban) 관리</h3>
             <input id="ban-id" placeholder="유저ID 입력">
             <button onclick="req('POST', '/ban?ban_id=' + document.getElementById('ban-id').value)">밴 추가</button>
             <button onclick="req('DELETE', '/ban?ban_id=' + document.getElementById('ban-id').value)">밴 삭제</button>
             <div id="res-ban"></div>
         </div>
 
-        <!-- 프로필 및 댓글 -->
+        <!-- 5. 프로필 & 댓글 -->
         <div class="box">
-            <h3>5. 프로필 & 댓글</h3>
+            <h3>👤 프로필 & 댓글</h3>
             <input id="p-id" placeholder="조회할 유저ID">
             <button onclick="req('GET', '/profile?profile=' + document.getElementById('p-id').value)">프로필 조회</button>
             <hr>
             <input id="reply-to" placeholder="대상 유저ID">
             <input id="reply-text" placeholder="댓글 내용">
             <button onclick="req('POST', `/profile?person=${document.getElementById('reply-to').value}&replytext=${document.getElementById('reply-text').value}`)">댓글 작성</button>
-            <input id="del-id" placeholder="삭제할 reply_id">
-            <button onclick="req('DELETE', '/profile?del_id=' + document.getElementById('del-id').value)">댓글 삭제</button>
+            <input id="del-id" placeholder="삭제할 reply_id (숫자)">
+            <input id="del-user" placeholder="댓글이 달린 유저ID">
+            <button onclick="req('DELETE', `/profile?del_id=${document.getElementById('del-id').value}&del_user=${document.getElementById('del-user').value}`)">댓글 삭제</button>
             <div id="res-profile"></div>
         </div>
     </div>
 
-    <script>
-        async function req(method, url) {
-            const response = await fetch(url, { method: method });
-            const data = await response.json();
-            
-            let targetId = 'res-timer';
-            if(url.includes('leader')) targetId = 'res-leader';
-            else if(url.includes('member')) targetId = 'res-member';
-            else if(url.includes('ban')) targetId = 'res-ban';
-            else if(url.includes('profile')) targetId = 'res-profile';
-            
-            document.getElementById(targetId).innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+<script>
+    async function req(method, url) {
+        const response = await fetch(url, { method: method });
+        const data = await response.json();
+        
+        let targetId = 'res-timer';
+        if(url.includes('leader')) targetId = 'res-leader';
+        else if(url.includes('member')) targetId = 'res-member';
+        else if(url.includes('ban')) targetId = 'res-ban';
+        else if(url.includes('profile')) targetId = 'res-profile';
+        
+        const targetDiv = document.getElementById(targetId);
+        
+        // 데이터가 배열(리더보드/멤버)일 경우 표로 변환
+        if (data.leaderboard || data.memberlist) {
+            const list = data.leaderboard || data.memberlist;
+            let html = `<table border="1" style="width:100%; border-collapse:collapse; font-size:12px;">
+                <tr style="background:#eee"><th>순위</th><th>ID</th><th>총시간(초)</th></tr>`;
+            list.forEach((item, index) => {
+                html += `<tr><td>${index+1}</td><td>${item.std_id}</td><td>${item.total_time}</td></tr>`;
+            });
+            html += `</table>`;
+            targetDiv.innerHTML = html + `<details><summary>JSON 보기</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;
+        } 
+        // 댓글 조회일 경우
+        else if (data.replys) {
+            let html = `<strong>댓글 목록:</strong><ul>`;
+            data.replys.forEach(r => {
+                html += `<li>[${r.reply_id}] <b>${r.id}</b>: ${r.reply}</li>`;
+            });
+            html += `</ul>`;
+            targetDiv.innerHTML = html + `<details><summary>JSON 보기</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;
         }
-    </script>
+        else {
+            targetDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+    }
+</script>
 </body>
 </html>
