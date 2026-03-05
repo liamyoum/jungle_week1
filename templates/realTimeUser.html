@@ -1,86 +1,88 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <!-- Required meta tags -->
-		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1, shrink-to-fit=no"
-		/>
-		<!-- Tailwind -->
-		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-		<!-- Jquery -->
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-		<!-- 구글폰트 -->
-		<link
-			href="https://fonts.googleapis.com/css2?family=Gothic+A1&display=swap"
-			rel="stylesheet"
-		/>
-    <title>정품타</title>
+{% extends "base.html" %} {% block content %}
+<nav
+	class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all"
+>
+	<div
+		class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center"
+	>
+		<div
+			class="font-bold text-3xl text-white tracking-tighter cursor-pointer"
+		>
+			정품타
+		</div>
 
-    <style>
-      .jungle-bg {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-                              url('../img/jungle.jpg');
-            background-size: cover;
-            background-position: center;
-      }
-    </style>
+		<div
+			class="flex gap-6 text-white/80 font-medium text-md items-center"
+		>
+			<a href="/" class="hover:text-white">홈</a>
+			<a href="/realTimeUser" class="hover:text-white"
+				>실시간 접속자</a
+			>
+			<a href="/friends" class="hover:text-white">친구</a>
+			<a href="/myPage" class="hover:text-white">마이페이지</a>
+			<button
+				class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition"
+			>
+				로그아웃
+			</button>
+		</div>
+	</div>
+</nav>
 
-	<body class="jungle-bg bg-cover bg-fixed min-h-screen flex justify-center">
-		<nav class="fixed top-0 left-0 w-full bg-green-600/70 backdrop-blur-md shadow-sm z-50 transition-all">
-      <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-        <div class="font-bold text-3xl text-white tracking-tighter cursor-pointer">
-          정품타
-        </div>
+<main class="max-w-4xl mx-auto pt-32 pb-24 px-4">
+	<section
+		class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden border border-white/20"
+	>
+		<div
+			class="p-8 text-center border-b border-gray-100 bg-green-50/50"
+		>
+			<h2
+				id="nickname"
+				class="text-4xl font-black text-gray-800 tracking-tight"
+			>
+				<span class="text-gray-400 font-normal text-lg"></span> 실시간
+				접속자
+			</h2>
+		</div>
 
-        <div class="flex gap-6 text-white/80 font-medium text-md items-center">
-          <a href="/" class="hover:text-white">홈</a>
-          <a href="/realTimeUser" class="hover:text-white">실시간 접속자</a>
-          <a href="/friends" class="hover:text-white">친구</a>
-          <a href="/myPage" class="hover:text-white">마이페이지</a>
-          <button class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition">로그아웃</button>
-        </div>
-      </div>
-    </nav>
+		<div class="p-8 space-y-10">
+			<div class="space-y-8">
+				<div class="pt-2">
+					<h3
+						class="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2"
+					>
+						<span class="relative flex h-2 w-2">
+							<span
+								class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+							></span>
+							<span
+								class="relative inline-flex rounded-full h-2 w-2 bg-green-500"
+							></span>
+						</span>
+						실시간 접속 유저
+					</h3>
+					<div
+						id="user-list"
+						class="space-y-2 max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent"
+					>
+						<p class="text-xs text-gray-400 text-center py-4">
+							접속 중인 유저를 불러오는 중...
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</main>
 
-    <main class="max-w-4xl mx-auto pt-32 pb-24 px-4">
-        <section class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden border border-white/20">
-            <div class="p-8 text-center border-b border-gray-100 bg-green-50/50">
-                <h2 id="nickname" class="text-4xl font-black text-gray-800 tracking-tight">
-                    <span class="text-gray-400 font-normal text-lg"></span> 실시간 접속자
-                </h2>
-            </div>
+<script>
+	function updateUsers(userList) {
+		const $container = $('#user-list');
+		$container.empty(); // 로딩 문구 제거
 
-            <div class="p-8 space-y-10">
-                <div class="space-y-8">
-                    <div class="pt-2">
-                        <h3 class="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
-                            <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </span>
-                            실시간 접속 유저
-                        </h3>
-                    <div id="user-list" class="space-y-2 max-h-48 overflow-y-auto pr-2 
-                                            scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-                        <p class="text-xs text-gray-400 text-center py-4">접속 중인 유저를 불러오는 중...</p>
-                        
-                    </div>
-                </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-        <script>
-            function updateUsers(userList) {
-                const $container = $('#user-list');
-                $container.empty(); // 로딩 문구 제거
-
-                userList.forEach(user => {
-                    // Tailwind 클래스로만 디자인된 유저 행(Row)
-                    const userRow = `
+		userList.forEach((user) => {
+			// Tailwind 클래스로만 디자인된 유저 행(Row)
+			const userRow = `
                         <div class="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-xl border border-gray-100 hover:border-green-200 hover:bg-white transition-all shadow-sm">
                             <div class="flex items-center gap-3">
                                 <span class="text-sm font-bold text-gray-700 hover">${user.nickname}</span>
@@ -91,15 +93,18 @@
                             </div>
                         </div>
                     `;
-                    $container.append(userRow);
-                });
-            }
+			$container.append(userRow);
+		});
+	}
 
-            // 테스트용 (실제로는 서버 통신 후 호출하세요)
-            updateUsers([
-                {nickname: "정글러"}, {nickname: "코딩왕"}, {nickname: "열공러"}, 
-                {nickname: "잠만보"}, {nickname: "카푸치노"}, {nickname: "테일윈드"}
-            ]);
-        </script>
-    </body>
-</html>
+	// 테스트용 (실제로는 서버 통신 후 호출하세요)
+	updateUsers([
+		{ nickname: '정글러' },
+		{ nickname: '코딩왕' },
+		{ nickname: '열공러' },
+		{ nickname: '잠만보' },
+		{ nickname: '카푸치노' },
+		{ nickname: '테일윈드' }
+	]);
+</script>
+{% endblock %}
