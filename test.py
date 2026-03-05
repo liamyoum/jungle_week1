@@ -260,7 +260,7 @@ def load_memberlist():
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id'],"ban"),leaderboard))
         return jsonify({'result':'success','memberlist':leaderboard[:30]})
 
-    elif filterMode =='friends':
+    elif filterMode =='bans':
         leaderboard = list(db.user.find({}, {'_id':0}).sort('total_time',-1))
         if 'ban_id' in me :
             leaderboard=list(filter(lambda x: listfilter(x, me['ban_id']),leaderboard))
