@@ -41,7 +41,6 @@ def listfilter(leaderboard,list,mode="friend",str="std_"):
         return True
 
 
-
 #새벽4시로부터 지난 초를 계산해주는 함수
 #input=time
 #output=seconds
@@ -359,7 +358,7 @@ def randquote():
 
 if __name__ == '__main__':
     
-    app.run('0.0.0.0', port=5000, debug=True)
+    app.run('0.0.0.0', port=5001, debug=True)
     db.quotes.delete_many({})
     quotess=[ {"text":"빨리 가려면 혼자 가고, 멀리 가려면 함께 가라. — 아프리카 속담"},
               {"text":"혼자서 할 수 있는 일은 작지만, 함께 할 수 있는 일은 위대하다. — 헬렌 켈러"},
