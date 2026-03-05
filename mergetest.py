@@ -99,7 +99,8 @@ def timecal():
     {'$set': {
         'total_time': totaltime,
         'today_times':todaytimes,
-        'start_time':None
+        'start_time':None,
+        'last_session':thisSestime
     }}      
     )
                                  
@@ -120,13 +121,13 @@ def home():
     me = returnleader['myleaderboard']
     return render_template('index.html', quote=random_quote, ranking_list=leaderboard, my_rank=returnleader['myleader'], my_name=me['std_id'], my_total_time=me['total_time'])
 
-@app.route('/result')
+@app.route('/result', methods=['POST'])
 def result():
     endinfo=timecal()
     returnleader=load_leaderboard()
-    print("리턴 호출",endinfo['thisSestime'],returnleader['result'])
+    print("리턴 호출",endinfo,returnleader['result'])
     if returnleader['result'] == 'fail':
-        return render_template('result.html',message="error")
+        return render_template('result.html')
     
     leaderboard = returnleader['leaderboard']
     me = returnleader['myleaderboard']
