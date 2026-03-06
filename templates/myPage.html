@@ -41,7 +41,7 @@
 					{% for item in replys %}
 					<div class="bg-gray-50 p-4 rounded-xl text-sm flex justify-between items-start group" id="reply-{{ item.reply_id }}">
 						<div>
-							<span class="font-bold text-green-700">{{ item.id }}</span>: {{ item.reply }}
+							<span class="font-bold text-green-700">{{ item.nickname }}</span>: {{ item.reply }}
 						</div>
 						<!-- 내 마이페이지이므로 모든 댓글을 지울 수 있게 허용 -->
 						<button onclick="deleteReply('{{ item.reply_id }}')" class="text-xs text-red-400 opacity-0 group-hover:opacity-100 transition">삭제</button>

@@ -885,12 +885,19 @@ def my_page():
         return redirect('/')
         
     target_reply = db.reply.find_one({'std_id': g.user_id}, {'_id': 0})
-    replys = target_reply.get('replys', []) if target_reply else[]
+    replys = target_reply.get('replys', []) if target_reply else []
+    
+    for r in replys:
+        writer_info = db.user.find_one({'std_id': r['id']}, {'_id': 0, 'nickname': 1})
+        if writer_info and 'nickname' in writer_info:
+            r['nickname'] = writer_info['nickname']
+        else:
+            r['nickname'] = r['id'] # 혹시 탈퇴하거나 닉네임이 없는 유저면 기존 ID 표시
     
     total_sec = user_info.get('total_time', 0)
     time_dict = sectoformat(total_sec)
     user_info['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분 {time_dict['seconds']}초"
-    user_info['combo'] = 0 # 연속 학습 일수 (현재 DB에 없으므로 임시로 0 처리)
+    user_info['combo'] = 0 # 연속 학습 일수 
     
     return render_template('myPage.html', profile_inf=user_info, replys=replys)
 
