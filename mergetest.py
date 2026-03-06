@@ -932,7 +932,7 @@ def freinds_page():
     total_sec = user_info.get('total_time', 0)
     time_dict = sectoformat(total_sec)
     user_info['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분 {time_dict['seconds']}초"
-    user_info['combo'] = 0 
+    user_info['combo'] = user_info.get('combo', 0)
     
     return render_template('friendsProfile.html', profile_inf=user_info, replys=replys)
 
