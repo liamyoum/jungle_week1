@@ -903,32 +903,32 @@ def my_page():
 
 @app.route('/friendsprofile')
 @login_required_page
-def friend_profile_page():
-    # 🚨 수정: 내 정보가 아니라 URL에 포함된 profile ID를 가져옵니다.
-    target_id = request.args.get('profile')
-    if not target_id:
+def freinds_page():
+    # 만약 값이 안 넘어오면 기본값으로 내 아이디(g.user_id)를 씁니다.
+    target_id = request.args.get('profile', g.user_id)
+    
+    user_info = db.user.find_one({'std_id': target_id}, {'_id': 0})
+    if not user_info:
         return redirect('/')
         
-    # 친구 유저 정보 가져오기
-    target_user = db.user.find_one({'std_id': target_id}, {'_id': 0})
-    if not target_user:
-        return "존재하지 않는 유저입니다.", 404
-        
-    # 친구 페이지의 댓글 데이터 가져오기
     target_reply = db.reply.find_one({'std_id': target_id}, {'_id': 0})
     replys = target_reply.get('replys', []) if target_reply else []
     
-    # 시간 포맷팅
-    total_sec = target_user.get('total_time', 0)
-    time_dict = sectoformat(total_sec)
-    target_user['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분"
+    # 수정 2: 방명록 댓글 작성자의 닉네임 매핑
+    for r in replys:
+        writer_info = db.user.find_one({'std_id': r['id']}, {'_id': 0, 'nickname': 1})
+        if writer_info and 'nickname' in writer_info:
+            r['nickname'] = writer_info['nickname']
+        else:
+            r['nickname'] = r['id']
     
-    # 콤보 등 기타 정보 (DB에 없다면 기본값)
-    if 'combo' not in target_user:
-        target_user['combo'] = 0
-
-    return render_template('friendsProfile.html', profile_inf=target_user, replys=replys)
-
+    # 초(second) 단위로 되어있는 총 공부시간 포맷팅
+    total_sec = user_info.get('total_time', 0)
+    time_dict = sectoformat(total_sec)
+    user_info['totaltime_str'] = f"{time_dict['hours']}시간 {time_dict['minutes']}분 {time_dict['seconds']}초"
+    user_info['combo'] = 0 
+    
+    return render_template('friendsProfile.html', profile_inf=user_info, replys=replys)
 
 ##
 

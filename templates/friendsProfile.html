@@ -68,7 +68,7 @@
                     {% for item in replys %}
                     <div class="bg-gray-50 p-4 rounded-xl text-sm flex justify-between items-start group">
                         <div>
-                            <span class="font-bold text-green-700">{{ item.id }}</span>: {{ item.reply }}
+                            <span class="font-bold text-green-700">{{ item.nickname }}</span>: {{ item.reply }}
                         </div>
                         <!-- 내가 쓴 댓글인 경우에만 삭제 버튼 노출 -->
                         {% if item.id == g.user_id %}
