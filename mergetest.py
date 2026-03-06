@@ -13,7 +13,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import jwt
 import secrets
+import pytz
 
+KST = pytz.timezone('Asia/Seoul')
+class Config:
+    SCHEDULER_API_ENABLED = True
+    SCHEDULER_TIMEZONE = "Asia/Seoul"
 
 ACCESS_EXP_MINUTE = 20
 REFRESH_EXP_DAYS = 1
@@ -72,7 +77,8 @@ def timecal():
     todaytimes = target_user.get('todaytimes',[])
 
     fmt = '%Y:%m:%d:%H:%M:%S'
-    nowtime = time.strftime(fmt)
+    # 수정: KST 기준으로 현재 시간 생성
+    nowtime = datetime.now(KST).strftime(fmt)
     startTimestamp = datetime.strptime(starttime, fmt)
     endTimestamp = datetime.strptime(nowtime, fmt)
 
@@ -562,11 +568,10 @@ def reset():
     db.user.update_many({'todaytimes': {'$ne': []}}, {'$inc': {'combo': 1}})
     db.user.update_many({'todaytimes': {'$eq': []}}, {'$set': {'combo': 0}})
 
-    # 2. 타이머를 안 끄고 잔 유저들(start_time이 있는 유저) 정산
     fmt = '%Y:%m:%d:%H:%M:%S'
-    now_str = time.strftime(fmt) # 현재 시간 (새벽 4시)
+    # 수정: KST 기준으로 현재 시간(새벽 4시) 생성
+    now_str = datetime.now(KST).strftime(fmt) 
     now_dt = datetime.strptime(now_str, fmt)
-
     # start_time이 None이 아닌 유저만 모두 찾기
     active_users = db.user.find({'start_time': {'$ne': None}})
 
@@ -599,7 +604,8 @@ def reset():
 @login_required_api
 def start_time():
     fmt='%Y:%m:%d:%H:%M:%S'
-    nowtime = time.strftime(fmt)
+    # 수정: KST 기준으로 현재 시간 생성
+    nowtime = datetime.now(KST).strftime(fmt)
     startTimestamp = datetime.strptime(nowtime, fmt)
     startTimestamp = am4cal(startTimestamp)
     

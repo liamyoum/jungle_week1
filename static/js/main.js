@@ -61,16 +61,7 @@ function startSession() {
         data: {},
         success: function (response) {
             if (response['result'] == 'success') {
-                // 1. 서버에서 받은 UTC 시간 문자열 (예: "2026-03-06 02:55:41")
-                let rawNowTime = response['nowtime'];
-                
-                // 2. 문자열을 Date 객체로 정확히 파싱하기 위해 ISO 형식으로 변환 (공백을 T로 변경하고 끝에 Z 추가)
-                let isoString = rawNowTime.replace(' ', 'T') + 'Z'; 
-                let dateObj = new Date(isoString);
-
-                // 3. 한국 시간 형식에 맞게 문자열로 변환 (예: "2026. 3. 6. 오전 11:55:41")
-                const serverStartTime = dateObj.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
-                
+                const serverStartTime = response['nowtime']; // 서버 시간을 그대로 사용!
                 const clientStartTime = Date.now(); 
                 
                 sessionStorage.setItem('serverStartTime', serverStartTime);
