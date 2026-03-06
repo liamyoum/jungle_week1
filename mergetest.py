@@ -22,7 +22,7 @@ HEARTBEAT_GRACE_MINUTES = 10
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev-only-secret")
 JWT_ALG = "HS256"
 
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://test:test@localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "jungle")  # 하나로 통일
 
 class Config:
