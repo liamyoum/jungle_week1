@@ -35,7 +35,6 @@
 		<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 		<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 		<script>
-			// login/signup 페이지에서는 실행하지 않도록 체크
 			if (
 				!location.pathname.startsWith('/login') &&
 				!location.pathname.startsWith('/signup')
@@ -59,15 +58,16 @@
 								credentials: 'include'
 							});
 						} else {
-							location.href = '/login';
+							// 🚨 프론트엔드 스토리지 완벽 파기 후 로그아웃 라우트로 이동
+							sessionStorage.clear();
+							localStorage.clear();
+							location.href = '/logout'; 
 						}
 					}
 				}
 
 				heartbeatOnce();
-
 				setInterval(heartbeatOnce, 5000);
-
 				document.addEventListener('visibilitychange', () => {
 					if (!document.hidden) heartbeatOnce();
 				});

@@ -23,13 +23,15 @@
 			<a
 				href="/logout"
 				onclick="
-					return confirm(
-						'정말 로그아웃 하시겠습니까? \n공부 시간 측정 중이라면 종료 버튼을 눌러주세요.'
-					);
+					if(confirm('정말 로그아웃 하시겠습니까? \n공부 시간 측정 중이라면 종료 버튼을 눌러주세요.')) {
+						sessionStorage.clear();
+						localStorage.clear();
+						return true;
+					}
+					return false;
 				"
 				class="bg-white/20 px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/30 transition"
-				>로그아웃</a
-			>
+			>로그아웃</a>
 		</div>
 	</div>
 </nav>
@@ -93,7 +95,7 @@
 							{{ loop.index }}위
 						</td>
 						<td class="px-6 py-4 font-semibold text-gray-800">
-							{{ user.std_id }}
+							{{ user.nickname }}
 						</td>
 						<td class="px-6 py-4 text-gray-500">{{ user.std_id }}</td>
 						<td class="px-6 py-4 font-mono text-green-600">
