@@ -172,26 +172,26 @@ python mergetest.py
 
 저장소에 공식 역할표는 없어서, 아래 내용은 커밋 작성자와 수정 파일을 기준으로 정리한 추정입니다.
 
-### 시원
+### 이시원 @NearthYou
 
 - 백엔드 핵심 로직
 - 세션/JWT 인증 흐름
 - 타이머 시간 계산 및 오전 4시 리셋
 - `dummy.py`, `changeId.py` 등 보조 스크립트 작성
 
-### Wish-Upon-A-Star
+### 이원재 @Wish-Upon-A-Star
 
 - 메인 화면 및 타이머 UX
 - `main.js` 기반 스톱워치/재개 로직
 - `index`, `result`, `realTimeUser` 화면 연동
 
-### liamyoum
+### 염태선 @liamyoum
 
 - 저장소 운영
 - 로그인/회원가입/헤더 등 공통 화면 구성
 - 초기 템플릿 구조와 프론트 연결
 
-### cad8798-cmd
+### 송영진 @cad8798-cmd
 
 - 친구 페이지, 친구 프로필, 마이페이지 UI
 - 댓글이 포함된 프로필 화면 개선
