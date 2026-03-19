@@ -1,0 +1,7 @@
+Flask
+pymongo
+Flask-APScheduler
+Jinja2
+Werkzeug
+PyJWT
+pytz
